@@ -1,0 +1,23 @@
+# Build artifacts and dependencies
+build
+bin
+dist
+target
+node_modules
+
+# IDE folders
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.cproject
+.settings/
+
+# Package Manager Lockfiles
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
