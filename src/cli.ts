@@ -1,12 +1,8 @@
-import {foo, version} from "./index.ts";
+import {Command} from "commander";
+import {getVersion} from "./version.ts";
 
-const args = process.argv.slice(2);
+const cli = new Command();
 
-if (args.includes("--version")) {
-    console.log(`axogen v${version}`);
-} else if (args.includes("--test")) {
-    console.log(foo("CLI"));
-} else {
-    console.log("axogen CLI is working! 🎉");
-    console.log("Try: axogen --version or axogen --test");
-}
+cli.version(getVersion());
+
+cli.parse();

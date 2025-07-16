@@ -1,10 +1,11 @@
 {
-    "name": "axogen",
+    "name": "@axonotes/axogen",
     "version": "0.1.0",
     "description": "TypeScript-native configuration and task management",
-    "module": "src/index.ts",
-    "main": "dist/index.js",
     "type": "module",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
     "bin": {
         "axogen": "./bin/axogen"
     },
@@ -12,23 +13,42 @@
         "bin",
         "dist"
     ],
-    "lint-staged": {
-        "**/*": "prettier --write --ignore-unknown"
-    },
     "scripts": {
         "build": "bun run build.ts",
         "test:local": "bun run build && ./bin/axogen --version",
-        "dev": "bun --watch src/cli.ts",
         "format": "prettier --write .",
         "prepare": "husky"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/axonotes/axogen.git"
+    },
+    "keywords": [
+        "typescript",
+        "configuration",
+        "task-management",
+        "cli"
+    ],
+    "author": "Oliver Seifert",
+    "license": "MIT",
+    "dependencies": {
+        "commander": "^14.0.0"
     },
     "devDependencies": {
         "@types/bun": "latest",
         "husky": "^9.1.7",
         "lint-staged": "^16.1.2",
-        "prettier": "3.6.2"
+        "prettier": "3.6.2",
+        "typescript": "^5.8.3"
     },
     "peerDependencies": {
         "typescript": "^5"
+    },
+    "lint-staged": {
+        "**/*": "prettier --write --ignore-unknown"
+    },
+    "engines": {
+        "node": ">=18",
+        "bun": ">=1.2"
     }
 }

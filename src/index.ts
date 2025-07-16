@@ -1,5 +1,5 @@
-export function foo(name: string = "world"): string {
-    return `Hello ${name} from axogen! 🪓`;
-}
+import {getVersion} from "./version.ts";
 
-export const version = "0.1.0";
+export function foo(bar: string): string {
+    return `Hello, ${bar}! with version ${getVersion()}`;
+}

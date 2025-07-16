@@ -1,15 +1,5 @@
-# axogen
+# Axogen
 
-To install dependencies:
+🚧 **This package is currently under development** 🚧
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run src/index.ts
-```
-
-This project was created using `bun init` in bun v1.2.3. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Please check back later for the full implementation.

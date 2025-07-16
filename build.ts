@@ -1,7 +1,18 @@
 #!/usr/bin/env bun
 
 import {build} from "bun";
-import {writeFileSync, chmodSync, mkdirSync, rmSync, existsSync} from "fs";
+import {
+    writeFileSync,
+    chmodSync,
+    mkdirSync,
+    rmSync,
+    existsSync,
+    readFileSync,
+} from "fs";
+
+// Read version from package.json
+const packageJson = JSON.parse(readFileSync("package.json", "utf-8"));
+const version = packageJson.version;
 
 // Pretty console output
 const log = {
@@ -20,13 +31,22 @@ async function main() {
     setupDirectories();
     await typeCheck();
 
-    const buildResult = await buildCLI();
+    const [libraryResult, cliResult] = await Promise.all([
+        buildLibrary(),
+        buildCLI(),
+    ]);
 
-    if (!buildResult.success) {
-        handleBuildFailure(buildResult);
+    if (!libraryResult.success || !cliResult.success) {
+        if (!libraryResult.success) {
+            handleBuildFailure(libraryResult);
+        }
+        if (!cliResult.success) {
+            handleBuildFailure(cliResult);
+        }
         return;
     }
 
+    await generateTypes();
     await createExecutable();
 
     cleanup();
@@ -42,6 +62,11 @@ function setupDirectories() {
     // Clean existing bin directory
     if (existsSync("bin")) {
         rmSync("bin", {recursive: true});
+    }
+
+    // Clean existing dist directory
+    if (existsSync("dist")) {
+        rmSync("dist", {recursive: true});
     }
 
     // Create fresh directories
@@ -83,7 +108,55 @@ async function buildCLI() {
         entrypoints: ["src/cli.ts"],
         outdir: "bin/build",
         target: "node",
+        define: {
+            __VERSION__: `"${version}"`,
+        },
     });
+}
+
+async function buildLibrary() {
+    log.step("Building library...");
+
+    return await build({
+        entrypoints: ["src/index.ts"],
+        outdir: "dist",
+        target: "node",
+        format: "esm",
+        sourcemap: "linked",
+        define: {
+            __VERSION__: `"${version}"`,
+        },
+    });
+}
+
+async function generateTypes() {
+    log.step("Generating TypeScript declarations...");
+
+    try {
+        const result = Bun.spawn(
+            ["bun", "tsc", "--project", "tsconfig.build.json"],
+            {
+                cwd: process.cwd(),
+                stderr: "pipe",
+                stdout: "pipe",
+            }
+        );
+
+        await result.exited;
+
+        const logs = await new Response(result.stdout).text();
+
+        if (logs.trim() !== "") {
+            log.error("TypeScript declaration generation errors found!");
+            console.error(logs);
+            process.exit(1);
+        }
+
+        log.info("TypeScript declarations generated");
+    } catch (error) {
+        log.warn("Could not generate TypeScript declarations");
+        log.info("Install typescript: bun add -D typescript");
+    }
 }
 
 function handleBuildFailure(result: Bun.BuildOutput) {
