@@ -32,7 +32,8 @@
     "author": "Oliver Seifert",
     "license": "MIT",
     "dependencies": {
-        "commander": "^14.0.0"
+        "commander": "^14.0.0",
+        "tsx": "^4.20.3"
     },
     "devDependencies": {
         "@types/bun": "latest",
