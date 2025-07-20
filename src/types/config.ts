@@ -1,7 +1,7 @@
 import {z} from "zod";
 
 /**
- * Zod schemas for configuration validation - FIXED for Zod v4
+ * Zod schemas for configuration validation - UPDATED for new command system with Zod v4
  */
 
 // Base schemas
@@ -9,7 +9,7 @@ const baseTargetSchema = z.object({
     path: z.string({
         message: "Target path must be a string",
     }),
-    variables: z.record(z.string(), z.any()),
+    variables: z.record(z.string(), z.any()).optional().default({}),
 });
 
 // Target schemas - with strict validation
@@ -68,81 +68,150 @@ export const targetSchema = z.discriminatedUnion("type", [
     templateTargetSchema,
 ]);
 
-// Command schemas - with strict validation
-const commandOptionSchema = z
-    .object({
-        flags: z
-            .string({
-                message:
-                    "Option flags must be a string (e.g., '-f, --file <path>')",
-            })
-            .regex(/^-/, {
-                message: "Option flags must start with '-'",
-            }),
-        description: z.string().optional(),
-        default: z.any().optional(),
-        choices: z.array(z.string()).readonly().optional(),
-        required: z.boolean().optional(),
-        parser: z.any().optional(), // Functions can't be validated in Zod v4
-        env: z.string().optional(),
-    })
-    .strict();
+// NEW COMMAND SYSTEM TYPES
 
-const commandArgumentSchema = z
-    .object({
-        syntax: z
-            .string({
-                message:
-                    "Argument syntax must be a string (e.g., '<n>' or '[name]')",
-            })
-            .regex(/^(<[^>]+>|\[[^\]]+\])$/, {
-                message:
-                    "Invalid argument syntax. Use <required> or [optional]",
-            }),
-        description: z.string().optional(),
-        default: z.any().optional(),
-        parser: z.any().optional(), // Functions can't be validated in Zod v4
-    })
-    .strict();
+/**
+ * Global context available to all commands
+ */
+export interface CommandGlobalContext {
+    cwd: string;
+    env: Record<string, string | undefined>;
+    verbose: boolean;
+}
 
-// Command function schema - simplified for Zod v4 compatibility
-const commandFunctionSchema = z
-    .any()
-    .refine((val) => typeof val === "function", {
-        message: "Must be a function",
-    });
+/**
+ * Command context for schema-based commands
+ */
+export interface CommandContext<
+    TOptions extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+    TArgs extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+> {
+    options: {
+        [K in keyof TOptions]: z.infer<TOptions[K]>;
+    };
+    args: {
+        [K in keyof TArgs]: z.infer<TArgs[K]>;
+    };
+    global: CommandGlobalContext;
+    config: AxogenConfig;
+}
 
-// Command definition schemas - with strict validation
-const executableCommandSchema = z
-    .object({
-        help: z.string().optional(),
-        options: z.array(commandOptionSchema).readonly().optional(),
-        arguments: z.array(commandArgumentSchema).readonly().optional(),
-        exec: z.union([z.string(), commandFunctionSchema]),
-        subcommands: z.undefined().optional(),
-    })
-    .strict();
+/**
+ * Simple command context for function-only commands
+ */
+export interface SimpleCommandContext {
+    global: CommandGlobalContext;
+    config: AxogenConfig;
+    // Legacy aliases for compatibility
+    cwd: string;
+    env: Record<string, string | undefined>;
+}
 
-const parentCommandSchema: z.ZodType<any> = z
-    .object({
-        help: z.string().optional(),
-        subcommands: z.lazy(() => z.record(z.string(), commandSchema)),
-        exec: z.undefined().optional(),
-        options: z.undefined().optional(),
-        arguments: z.undefined().optional(),
-    })
-    .strict();
+/**
+ * Command function types
+ */
+export type SimpleCommandFunction = (
+    context: SimpleCommandContext
+) => Promise<void> | void;
 
-const commandDefinitionSchema = z.union([
-    executableCommandSchema,
-    parentCommandSchema,
-]);
+export type SchemaCommandFunction<
+    TOptions extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+    TArgs extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+> = (context: CommandContext<TOptions, TArgs>) => Promise<void> | void;
 
-// Main command schema (string, function, or definition)
-export const commandSchema: z.ZodType<any> = z.union([
+/**
+ * String command definition
+ */
+export interface StringCommand {
+    _type: "string";
+    command: string;
+    help?: string;
+}
+
+/**
+ * Schema-based command definition
+ */
+export interface SchemaCommand<
+    TOptions extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+    TArgs extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+> {
+    _type: "schema";
+    help?: string;
+    options?: TOptions;
+    args?: TArgs;
+    exec: SchemaCommandFunction<TOptions, TArgs>;
+}
+
+/**
+ * Function command definition
+ */
+export interface FunctionCommand {
+    _type: "function";
+    exec: SimpleCommandFunction;
+}
+
+/**
+ * Command group definition
+ */
+export interface CommandGroup {
+    _type: "group";
+    help?: string;
+    commands: Record<string, AnyCommand>;
+}
+
+/**
+ * Union of all command types
+ */
+export type AnyCommand =
+    | string
+    | SimpleCommandFunction
+    | StringCommand
+    | SchemaCommand
+    | FunctionCommand
+    | CommandGroup;
+
+/**
+ * Zod schema for command validation
+ */
+const stringCommandSchema = z.object({
+    _type: z.literal("string"),
+    command: z.string(),
+    help: z.string().optional(),
+});
+
+const functionCommandSchema = z.object({
+    _type: z.literal("function"),
+    exec: z.custom<SimpleCommandFunction>(
+        (value) => typeof value === "function"
+    ),
+});
+
+const schemaCommandSchema = z.object({
+    _type: z.literal("schema"),
+    help: z.string().optional(),
+    options: z.record(z.string(), z.any()).optional(),
+    args: z.record(z.string(), z.any()).optional(),
+    exec: z.custom<SchemaCommandFunction>(
+        (value) => typeof value === "function"
+    ),
+});
+
+const commandGroupSchema: z.ZodType<CommandGroup> = z.object({
+    _type: z.literal("group"),
+    help: z.string().optional(),
+    commands: z.record(
+        z.string(),
+        z.lazy(() => commandSchema)
+    ),
+});
+
+// Main command schema that accepts all types
+export const commandSchema: z.ZodType<AnyCommand> = z.union([
     z.string(),
-    commandFunctionSchema,
-    commandDefinitionSchema,
+    stringCommandSchema,
+    schemaCommandSchema,
+    functionCommandSchema,
+    commandGroupSchema,
 ]);
 
 // Main config schema
@@ -161,30 +230,6 @@ export type YamlTarget = z.infer<typeof yamlTargetSchema>;
 export type TomlTarget = z.infer<typeof tomlTargetSchema>;
 export type TemplateTarget = z.infer<typeof templateTargetSchema>;
 export type Target = z.infer<typeof targetSchema>;
-
-export type CommandOption = z.infer<typeof commandOptionSchema>;
-export type CommandArgument = z.infer<typeof commandArgumentSchema>;
-
-export interface CommandContext<
-    TOptions extends Record<string, any> = Record<string, any>,
-    TArgs extends readonly any[] = readonly any[],
-> {
-    options: TOptions;
-    args: TArgs;
-    config: AxogenConfig;
-}
-
-export type CommandFunction<
-    TOptions extends Record<string, any> = Record<string, any>,
-    TArgs extends readonly any[] = readonly any[],
-> = (context: CommandContext<TOptions, TArgs>) => Promise<void> | void;
-
-export type ExecutableCommandDefinition = z.infer<
-    typeof executableCommandSchema
->;
-export type ParentCommandDefinition = z.infer<typeof parentCommandSchema>;
-export type CommandDefinition = z.infer<typeof commandDefinitionSchema>;
-export type Command = z.infer<typeof commandSchema>;
 
 export type AxogenConfig = z.infer<typeof axogenConfigSchema>;
 
@@ -208,7 +253,7 @@ export function validateTarget(name: string, target: unknown): Target {
 }
 
 // Helper function to validate commands with better error messages
-export function validateCommand(name: string, command: unknown): Command {
+export function validateCommand(name: string, command: unknown): AnyCommand {
     try {
         return commandSchema.parse(command);
     } catch (error) {

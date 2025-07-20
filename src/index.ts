@@ -14,15 +14,7 @@ export function defineConfig<T extends AxogenConfig>(
 export type {
     AxogenConfig,
     ConfigInput,
-    CommandContext,
-    CommandFunction,
     Target,
-    Command,
-    CommandDefinition,
-    ExecutableCommandDefinition,
-    ParentCommandDefinition,
-    CommandOption,
-    CommandArgument,
     EnvTarget,
     JsonTarget,
     YamlTarget,
@@ -31,6 +23,16 @@ export type {
     EnvSchema,
     ParsedEnv,
     EnvConfig,
+    AnyCommand,
+    StringCommand,
+    SchemaCommand,
+    CommandGroup,
+    FunctionCommand,
+    CommandContext,
+    SimpleCommandContext,
+    CommandGlobalContext,
+    SchemaCommandFunction,
+    SimpleCommandFunction,
 } from "./types";
 
 // Export Zod schemas for advanced users who want to extend or customize validation
@@ -46,6 +48,18 @@ export {
     validateTarget,
     validateCommand,
 } from "./types/config";
+
+// Export command helper functions
+export {
+    stringCommand,
+    defineCommand,
+    commandGroup,
+    functionCommand,
+    command,
+    cmd,
+    group,
+    type InferCommandContext,
+} from "./commands/helpers";
 
 // Export utilities that users might want
 export {loadConfig} from "./core/config";
