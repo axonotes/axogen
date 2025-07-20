@@ -1,8 +1,43 @@
-# Axogen
+<p align="center">
+  <a href="./">
+    <img src="assets/favicon.svg" alt="Axonotes Logo" width="150"/>
+  </a>
+</p>
 
-A TypeScript-native configuration system that unifies typed environment
-variables, code generation, and task management for **any project, any
-language**.
+<h1 align="center">Axogen</h1>
+
+<p align="center">
+  <strong>TypeScript-native configuration system for <em>any project, any language</em></strong>
+</p>
+
+<p align="center">
+  <a href="https://axonotes.github.io/axogen/">📖 Documentation</a> |
+  <a href="https://axonotes.github.io/axogen/getting-started/">🚀 Quick Start</a> |
+  <a href="https://axonotes.github.io/axogen/faq/">❓ FAQ</a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@axonotes/axogen">
+    <img src="https://img.shields.io/npm/v/@axonotes/axogen?style=flat-square&color=blue" alt="npm version" />
+  </a>
+  <a href="https://www.npmjs.com/package/@axonotes/axogen">
+    <img src="https://img.shields.io/npm/dm/@axonotes/axogen?style=flat-square&color=green" alt="npm downloads" />
+  </a>
+  <a href="https://github.com/axonotes/axogen/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/axonotes/axogen?style=flat-square" alt="license" />
+  </a>
+  <a href="https://github.com/axonotes/axogen/stargazers">
+    <img src="https://img.shields.io/github/stars/axonotes/axogen?style=flat-square&color=yellow" alt="stars" />
+  </a>
+  <a href="https://axonotes.github.io/axogen/">
+    <img src="https://img.shields.io/badge/docs-live-brightgreen?style=flat-square" alt="docs" />
+  </a>
+  <a href="https://www.typescriptlang.org/">
+    <img src="https://img.shields.io/badge/TypeScript-native-blue?style=flat-square&logo=typescript" alt="TypeScript" />
+  </a>
+</p>
+
+---
 
 ## Background
 
@@ -14,9 +49,9 @@ tool to solve this specific problem evolved into something more general.
 Honestly, I'm surprised there isn't a simple, easy-to-use tool like this already
 out there. If you know of one, please let me know!
 
-**Note:** This is very early development (v0.2.0). The API will likely change as
-I work on improving the developer experience to be even simpler while staying
-comprehensive.
+> **Note:** This is very early development (v0.2.0). The API will likely change
+> as I work on improving the developer experience to be even simpler while
+> staying comprehensive.
 
 ## The Problem
 
@@ -119,7 +154,17 @@ axogen generate
 Your API gets its `.env`, your web app gets its `.env.local`, and your Docker
 Compose file gets generated from a template - all perfectly in sync.
 
-## Quick Start
+## ✨ Features
+
+- **🛡️ Type-safe environment variables** with Zod validation
+- **📁 Multiple output formats** - `.env`, JSON, YAML, TOML, custom templates
+- **🎨 Template engine support** (Nunjucks, Handlebars, Mustache)
+- **⚡ Custom commands** for common development tasks
+- **🌍 Language-agnostic** - Works with Python, Go, Rust, Java, PHP, etc.
+- **👀 Watch mode** for development (coming soon)
+- **📦 Zero dependencies** in generated files
+
+## 🚀 Quick Start
 
 ```bash
 # Install
@@ -145,18 +190,9 @@ export default defineConfig({
 axogen generate
 ```
 
-## Features
+**[📖 Full Documentation →](https://axonotes.github.io/axogen/)**
 
-- **Type-safe environment variables** with Zod validation
-- **Multiple output formats** - `.env`, JSON, YAML, TOML, custom templates
-- **Template engine support** (Nunjucks, Handlebars, Mustache)
-- **Custom commands** for common development tasks
-- **Language-agnostic** - Works with any project: Python, Go, Rust, Java, PHP,
-  etc.
-- **Watch mode** for development (coming soon)
-- **Zero dependencies** in generated files
-
-## Why Not Just Use...?
+## 🤔 Why Not Just Use...?
 
 **Language-specific tools:**
 
@@ -178,29 +214,39 @@ manifests - all from one TypeScript source of truth.
 Axogen fills the gap between simple environment management and complex
 infrastructure tools.
 
-## Documentation
+## 📚 Documentation
 
-For detailed guides, examples, and the FAQ, check out the documentation in the
-`docs/` folder.
+| Resource                                                                 | Description                                  |
+| ------------------------------------------------------------------------ | -------------------------------------------- |
+| [📖 Documentation](https://axonotes.github.io/axogen/)                   | Complete guide and API reference             |
+| [🚀 Getting Started](https://axonotes.github.io/axogen/getting-started/) | Progressive tutorial from basics to advanced |
+| [💼 Examples](https://axonotes.github.io/axogen/examples/)               | Real-world usage patterns                    |
+| [❓ FAQ](https://axonotes.github.io/axogen/faq/)                         | Common questions and comparisons             |
 
-**Quick reference:**
-
-- [Getting Started](docs/getting-started.md) - Progressive tutorial from basics
-  to advanced usage
-- [FAQ](docs/faq.md) - Common questions and tool comparisons
-
-## Contributing
+## 🤝 Contributing
 
 This is still early development, so things will change. But if you want to help:
 
-1. Try it out and report issues
-2. Suggest API improvements
-3. Contribute code (open an issue first to discuss)
+1. 🧪 Try it out and report issues
+2. 💡 Suggest API improvements
+3. 🔧 Contribute code (open an issue first to discuss)
 
-## License
+## 📊 Star History
+
+<a href="https://www.star-history.com/#axonotes/axogen&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date" />
+ </picture>
+</a>
+
+## 📄 License
 
 MIT
 
 ---
 
-Built with ❤️ by [Oliver Seifert](https://github.com/imgajeed76)
+<p align="center">
+  Built with ❤️ by <a href="https://github.com/imgajeed76">Oliver Seifert</a>
+</p>

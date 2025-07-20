@@ -10,6 +10,8 @@ edit_uri: edit/main/docs/
 
 theme:
     name: material
+    favicon: assets/favicon.svg
+    logo: assets/favicon.svg
     palette:
         # Palette toggle for light mode
         - scheme: default
