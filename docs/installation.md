@@ -37,13 +37,35 @@ Pick your poison:
 
 ## Make Sure It Worked
 
+Check the version:
+
 ```bash
 axogen --version
 ```
 
-If you see a version number, you're golden.
+If you see a version number, you're golden. Want to test it out real quick?
+
+```bash
+# Create a minimal config
+echo 'import {defineConfig} from "@axonotes/axogen";
+export default defineConfig({
+    targets: {
+        test: {
+            path: "test.env",
+            type: "env",
+            variables: {NODE_ENV: "test"}
+        }
+    }
+});' > axogen.config.ts
+
+# Generate it
+axogen generate
+
+# Clean up
+rm axogen.config.ts test.env
+```
 
 !!! success "That's it!"
 
-    Create an `axogen.config.ts` file and you're off to the races.
+    Create a proper `axogen.config.ts` file and you're off to the races.
     Check out the [Getting Started](getting-started.md) guide to see how simple it really is.

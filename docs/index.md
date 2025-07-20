@@ -1,6 +1,6 @@
 # Axogen
 
-TypeScript-native configuration system for monorepos and complex projects.
+TypeScript-native configuration system for **any project, any language**.
 
 !!! warning "Early Development - v0.2.0"
 
@@ -15,6 +15,10 @@ JSON file that also needs it. Miss one? Good luck debugging why staging is
 broken.
 
 Define your config once in TypeScript, generate multiple formats. That's it.
+
+**Works with any language:** Python APIs, Go microservices, Rust backends, Java
+apps, PHP websites - doesn't matter. If your project uses config files, Axogen
+can help.
 
 ```typescript
 import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
@@ -64,7 +68,7 @@ They're always in sync because there's only one source of truth.
 
 ## The Problem
 
-In monorepos, configuration gets scattered everywhere:
+In any non-trivial project, configuration gets scattered everywhere:
 
 ```
 project/
@@ -72,8 +76,16 @@ project/
 ├── web/.env.local              # API_URL=http://localhost:3001
 ├── docker-compose.yml          # hardcoded DATABASE_URL again
 ├── k8s/configmap.yaml          # same DATABASE_URL, different format
-└── terraform/main.tf           # DATABASE_URL as a variable
+├── nginx.conf                  # port numbers hardcoded
+└── app.json                    # API URLs again
 ```
+
+This happens in **every language and framework**:
+
+- Python projects with `.env` + `config.yaml` + Docker configs
+- Go apps with JSON configs + environment variables + Kubernetes manifests
+- Java projects with `application.properties` + Docker + deployment configs
+- Any microservice architecture with scattered config files
 
 Change one value, update 5+ files. This is not only tedious but error-prone. You
 end up with inconsistent configurations across your project that can lead to
@@ -87,6 +99,7 @@ validation.
 - **Multiple output formats** - `.env`, JSON, YAML, TOML, templates
 - **Custom commands** for common tasks
 - **Template engine support** (Nunjucks, Handlebars, Mustache)
+- **Language-agnostic** - Works with Python, Go, Rust, Java, PHP, etc.
 - **Watch mode** for development
 
 ## Installation
@@ -144,7 +157,7 @@ export default defineConfig({
 });
 ```
 
-Set your environment variables in `.env`:
+Set your environment variables in `.env.axogen`:
 
 ```bash
 DATABASE_URL=postgresql://localhost:5432/myapp

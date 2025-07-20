@@ -1,7 +1,8 @@
 # Axogen
 
 A TypeScript-native configuration system that unifies typed environment
-variables, code generation, and task management.
+variables, code generation, and task management for **any project, any
+language**.
 
 ## Background
 
@@ -36,7 +37,7 @@ project/
 ├── web/.env.local              # NEXT_PUBLIC_API_URL=http://...
 ├── docker-compose.yml          # hardcoded ports and URLs
 ├── k8s/configmap.yaml          # same values again
-└── terraform/variables.tf     # and again...
+└── terraform/variables.tf      # and again...
 ```
 
 Every time you change a database URL or add a service, you're hunting through
@@ -106,6 +107,9 @@ WEB_PORT=3000
 NODE_ENV=development
 ```
 
+> **Important:** Add `.env.axogen` to your `.gitignore`! Just like any `.env`
+> file, you don't want to commit your secrets.
+
 Now one command generates all your configs:
 
 ```bash
@@ -147,18 +151,43 @@ axogen generate
 - **Multiple output formats** - `.env`, JSON, YAML, TOML, custom templates
 - **Template engine support** (Nunjucks, Handlebars, Mustache)
 - **Custom commands** for common development tasks
+- **Language-agnostic** - Works with any project: Python, Go, Rust, Java, PHP,
+  etc.
 - **Watch mode** for development (coming soon)
 - **Zero dependencies** in generated files
 
 ## Why Not Just Use...?
 
-- **dotenv**: Only handles `.env` files, no type safety, no generation
-- **config**: JavaScript only, no generation, complex setup
-- **crossplane**: Great for Kubernetes, overkill for simple projects
-- **Pulumi**: Infrastructure focus, not application config
+**Language-specific tools:**
+
+- **dotenv, config (JS)**: Only handle JavaScript. No multi-format generation.
+- **Viper (Go), dynaconf (Python), config-rs (Rust)**: Great for their
+  languages, but what about your Docker configs? Kubernetes manifests? You're
+  back to manual syncing.
+
+**Infrastructure tools:**
+
+- **Terraform, Pulumi**: Infrastructure focus, not application config.
+- **Ansible, Chef**: Server configuration management. Different problem space.
+- **Helm, Kustomize**: Kubernetes-specific. Doesn't help with your `.env` files.
+
+**The key difference:** Axogen works for ANY project in ANY language. Your
+Python API, Go microservice, React frontend, Docker configs, and Kubernetes
+manifests - all from one TypeScript source of truth.
 
 Axogen fills the gap between simple environment management and complex
 infrastructure tools.
+
+## Documentation
+
+For detailed guides, examples, and the FAQ, check out the documentation in the
+`docs/` folder.
+
+**Quick reference:**
+
+- [Getting Started](docs/getting-started.md) - Progressive tutorial from basics
+  to advanced usage
+- [FAQ](docs/faq.md) - Common questions and tool comparisons
 
 ## Contributing
 
@@ -166,7 +195,7 @@ This is still early development, so things will change. But if you want to help:
 
 1. Try it out and report issues
 2. Suggest API improvements
-3. Contribute code (see [CONTRIBUTING.md](CONTRIBUTING.md))
+3. Contribute code (open an issue first to discuss)
 
 ## License
 
@@ -174,5 +203,4 @@ MIT
 
 ---
 
-Built by [Oliver Seifert](https://github.com/oliverx0) while working on
-[AxonotesCore](https://github.com/axonotes/AxonotesCore).
+Built with ❤️ by [Oliver Seifert](https://github.com/imgajeed76)

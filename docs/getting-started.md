@@ -68,6 +68,10 @@ PORT=3000
 DATABASE_URL=postgresql://localhost:5432/myapp
 ```
 
+!!! warning "Don't commit your secrets!"
+
+    Add `.env.axogen` to your `.gitignore` file! It's just like any other `.env` file - you don't want to push your secrets to git.
+
 Now when you run `axogen generate`, it validates your environment variables and
 generates the config. If `DATABASE_URL` is missing, it'll yell at you. No more
 silent failures.
@@ -216,9 +220,15 @@ axogen generate
 # Generate specific target
 axogen generate --target app
 
+# See what would be generated (without writing files)
+axogen generate --dry-run
+
 # Run commands
 axogen run start
 axogen run migrate --direction up
+
+# List available commands
+axogen list
 
 # Watch mode (coming soon)
 axogen generate --watch

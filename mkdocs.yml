@@ -63,6 +63,7 @@ nav:
     - Getting Started:
           - Installation: installation.md
           - Quick Start: getting-started.md
+    - FAQ: faq.md
 
 extra:
     social:
