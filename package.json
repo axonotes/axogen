@@ -1,7 +1,7 @@
 {
     "name": "@axonotes/axogen",
-    "version": "0.2.1",
-    "description": "TypeScript-native configuration and task management",
+    "version": "0.2.2",
+    "description": "TypeScript-native configuration system that unifies typed environment variables, code generation, and task management for any project",
     "type": "module",
     "main": "dist/index.js",
     "module": "dist/index.js",
@@ -20,17 +20,41 @@
         "format": "prettier --write .",
         "prepare": "husky"
     },
+    "homepage": "https://axonotes.github.io/axogen/",
     "repository": {
         "type": "git",
         "url": "https://github.com/axonotes/axogen.git"
     },
+    "bugs": {
+        "url": "https://github.com/axonotes/axogen/issues"
+    },
+    "funding": {
+        "type": "github",
+        "url": "https://github.com/sponsors/imgajeed76"
+    },
     "keywords": [
         "typescript",
         "configuration",
+        "environment-variables",
+        "config-management",
         "task-management",
-        "cli"
+        "cli",
+        "dotenv",
+        "yaml",
+        "json",
+        "toml",
+        "template",
+        "monorepo",
+        "docker",
+        "kubernetes",
+        "type-safety",
+        "zod",
+        "code-generation"
     ],
-    "author": "Oliver Seifert",
+    "author": {
+        "name": "Oliver Seifert",
+        "url": "https://github.com/imgajeed76"
+    },
     "license": "MIT",
     "dependencies": {
         "@iarna/toml": "^2.2.5",
