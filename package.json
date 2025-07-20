@@ -15,6 +15,7 @@
     ],
     "scripts": {
         "build": "bun run build.ts",
+        "preview": "bun run format && bun run build && bun link",
         "test:local": "bun run build && ./bin/axogen --version",
         "format": "prettier --write .",
         "prepare": "husky"
@@ -32,14 +33,26 @@
     "author": "Oliver Seifert",
     "license": "MIT",
     "dependencies": {
+        "@iarna/toml": "^2.2.5",
+        "@types/js-yaml": "^4.0.9",
         "commander": "^14.0.0",
-        "tsx": "^4.20.3"
+        "dotenv": "^17.2.0",
+        "handlebars": "^4.7.8",
+        "jiti": "^2.4.2",
+        "js-yaml": "^4.1.0",
+        "mustache": "^4.2.0",
+        "nunjucks": "^3.2.4",
+        "tsx": "^4.20.3",
+        "zod": "^4.0.5"
     },
     "devDependencies": {
         "@types/bun": "latest",
+        "@types/mustache": "^4.2.6",
+        "@types/nunjucks": "^3.2.6",
         "husky": "^9.1.7",
         "lint-staged": "^16.1.2",
         "prettier": "3.6.2",
+        "tsup": "^8.5.0",
         "typescript": "^5.8.3"
     },
     "peerDependencies": {

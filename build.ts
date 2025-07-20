@@ -26,19 +26,19 @@ const log = {
 async function main() {
     const startTime = Date.now();
 
-    log.step("Building axogen CLI...");
+    log.step("Building axogen CLI and library...");
 
     setupDirectories();
     await typeCheck();
 
     const [libraryResult, cliResult] = await Promise.all([
-        buildLibrary(),
+        buildLibraryWithTsup(),
         buildCLI(),
     ]);
 
-    if (!libraryResult.success || !cliResult.success) {
-        if (!libraryResult.success) {
-            handleBuildFailure(libraryResult);
+    if (!libraryResult || !cliResult.success) {
+        if (!libraryResult) {
+            log.error("Library build failed!");
         }
         if (!cliResult.success) {
             handleBuildFailure(cliResult);
@@ -46,14 +46,13 @@ async function main() {
         return;
     }
 
-    await generateTypes();
     await createExecutable();
-
     cleanup();
 
     const duration = Date.now() - startTime;
     log.success(`Build completed in ${duration}ms`);
     log.info('Run "./bin/axogen --version" to test');
+    log.info("Library built with tsup for better IDE support!");
 }
 
 function setupDirectories() {
@@ -85,7 +84,7 @@ async function typeCheck() {
             stdout: "pipe",
         });
 
-        const errorOutput = await new Response(result.stdout).text();
+        const errorOutput = await new Response(result.stderr).text();
 
         if (errorOutput.trim() !== "") {
             log.error("TypeScript errors found!");
@@ -102,7 +101,7 @@ async function typeCheck() {
 }
 
 async function buildCLI() {
-    log.step("Compiling TypeScript...");
+    log.step("Compiling CLI with bun...");
 
     return await build({
         entrypoints: ["src/cli.ts"],
@@ -114,10 +113,75 @@ async function buildCLI() {
     });
 }
 
-async function buildLibrary() {
-    log.step("Building library...");
+async function buildLibraryWithTsup() {
+    log.step("Building library with tsup...");
 
-    return await build({
+    try {
+        // Check if tsup is available
+        const tsupCheck = Bun.spawn(["bun", "tsup", "--version"], {
+            cwd: process.cwd(),
+            stderr: "pipe",
+            stdout: "pipe",
+        });
+
+        await tsupCheck.exited;
+
+        if (tsupCheck.exitCode !== 0) {
+            throw new Error("tsup not found");
+        }
+
+        // Run tsup build
+        const result = Bun.spawn(
+            [
+                "bun",
+                "tsup",
+                "src/index.ts",
+                "--format",
+                "esm,cjs",
+                "--dts",
+                "--sourcemap",
+                "--clean",
+                "--outDir",
+                "dist",
+                "--define.__VERSION__",
+                `"${version}"`,
+                "--external",
+                "typescript",
+            ],
+            {
+                cwd: process.cwd(),
+                stderr: "pipe",
+                stdout: "pipe",
+            }
+        );
+
+        const output = await new Response(result.stdout).text();
+        const errorOutput = await new Response(result.stderr).text();
+
+        await result.exited;
+
+        if (result.exitCode !== 0) {
+            log.error("tsup build failed!");
+            if (errorOutput) console.error(errorOutput);
+            if (output) console.log(output);
+            return false;
+        }
+
+        log.info("Library built successfully with tsup");
+        return true;
+    } catch (error) {
+        log.error("tsup not available, falling back to bun build");
+        log.info("Install tsup: bun add -D tsup");
+
+        // Fallback to original bun build method
+        return await buildLibraryFallback();
+    }
+}
+
+async function buildLibraryFallback() {
+    log.step("Building library with bun (fallback)...");
+
+    const result = await build({
         entrypoints: ["src/index.ts"],
         outdir: "dist",
         target: "node",
@@ -127,6 +191,13 @@ async function buildLibrary() {
             __VERSION__: `"${version}"`,
         },
     });
+
+    if (result.success) {
+        // Also generate types with tsc
+        await generateTypes();
+    }
+
+    return result.success;
 }
 
 async function generateTypes() {
@@ -144,11 +215,11 @@ async function generateTypes() {
 
         await result.exited;
 
-        const logs = await new Response(result.stdout).text();
+        const errorOutput = await new Response(result.stderr).text();
 
-        if (logs.trim() !== "") {
+        if (errorOutput.trim() !== "") {
             log.error("TypeScript declaration generation errors found!");
-            console.error(logs);
+            console.error(errorOutput);
             process.exit(1);
         }
 

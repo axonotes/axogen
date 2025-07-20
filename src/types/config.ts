@@ -1,63 +1,176 @@
-// Core configuration types for axogen
+import {z} from "zod";
 
-export interface AxogenConfig {
-    /** Files to watch for changes */
-    watch?: string[];
+/**
+ * Zod schemas for configuration validation - FIXED for Zod v4
+ */
 
-    /** Target file generation configuration */
-    targets?: Record<string, Target>;
+// Base schemas
+const baseTargetSchema = z.object({
+    path: z.string({
+        message: "Target path must be a string",
+    }),
+    variables: z.record(z.string(), z.any()),
+});
 
-    /** Command definitions */
-    commands?: Record<string, Command>;
-}
+// Target schemas - with strict validation
+export const envTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("env"),
+    })
+    .strict();
 
-// Target Types
-export interface BaseTarget {
-    /** Path where the generated file should be written */
-    path: string;
-    /** Variables to include in the generated file */
-    variables: Record<string, any>;
-}
+export const jsonTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("json"),
+        indent: z.union([z.number(), z.string()]).default(2).optional(),
+    })
+    .strict();
 
-export interface EnvTarget extends BaseTarget {
-    type: "env";
-}
+export const yamlTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("yaml"),
+        options: z
+            .object({
+                indent: z.number().optional(),
+                lineWidth: z.number().optional(),
+                noRefs: z.boolean().optional(),
+            })
+            .strict()
+            .optional(),
+    })
+    .strict();
 
-export interface JsonTarget extends BaseTarget {
-    type: "json";
-}
+export const tomlTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("toml"),
+    })
+    .strict();
 
-export interface YamlTarget extends BaseTarget {
-    type: "yaml";
-}
+export const templateTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("template"),
+        template: z.string({
+            message: "Template path must be a string",
+        }),
+        engine: z
+            .enum(["nunjucks", "handlebars", "mustache"])
+            .default("nunjucks")
+            .optional(),
+    })
+    .strict();
 
-export interface TomlTarget extends BaseTarget {
-    type: "toml";
-}
+// Union of all target types
+export const targetSchema = z.discriminatedUnion("type", [
+    envTargetSchema,
+    jsonTargetSchema,
+    yamlTargetSchema,
+    tomlTargetSchema,
+    templateTargetSchema,
+]);
 
-export interface TemplateTarget extends BaseTarget {
-    type: "template";
-    /** Path to the template file */
-    template: string;
-}
+// Command schemas - with strict validation
+const commandOptionSchema = z
+    .object({
+        flags: z
+            .string({
+                message:
+                    "Option flags must be a string (e.g., '-f, --file <path>')",
+            })
+            .regex(/^-/, {
+                message: "Option flags must start with '-'",
+            }),
+        description: z.string().optional(),
+        default: z.any().optional(),
+        choices: z.array(z.string()).readonly().optional(),
+        required: z.boolean().optional(),
+        parser: z.any().optional(), // Functions can't be validated in Zod v4
+        env: z.string().optional(),
+    })
+    .strict();
 
-export type Target =
-    | EnvTarget
-    | JsonTarget
-    | YamlTarget
-    | TomlTarget
-    | TemplateTarget;
+const commandArgumentSchema = z
+    .object({
+        syntax: z
+            .string({
+                message:
+                    "Argument syntax must be a string (e.g., '<n>' or '[name]')",
+            })
+            .regex(/^(<[^>]+>|\[[^\]]+\])$/, {
+                message:
+                    "Invalid argument syntax. Use <required> or [optional]",
+            }),
+        description: z.string().optional(),
+        default: z.any().optional(),
+        parser: z.any().optional(), // Functions can't be validated in Zod v4
+    })
+    .strict();
 
-// Command Types
+// Command function schema - simplified for Zod v4 compatibility
+const commandFunctionSchema = z
+    .any()
+    .refine((val) => typeof val === "function", {
+        message: "Must be a function",
+    });
+
+// Command definition schemas - with strict validation
+const executableCommandSchema = z
+    .object({
+        help: z.string().optional(),
+        options: z.array(commandOptionSchema).readonly().optional(),
+        arguments: z.array(commandArgumentSchema).readonly().optional(),
+        exec: z.union([z.string(), commandFunctionSchema]),
+        subcommands: z.undefined().optional(),
+    })
+    .strict();
+
+const parentCommandSchema: z.ZodType<any> = z
+    .object({
+        help: z.string().optional(),
+        subcommands: z.lazy(() => z.record(z.string(), commandSchema)),
+        exec: z.undefined().optional(),
+        options: z.undefined().optional(),
+        arguments: z.undefined().optional(),
+    })
+    .strict();
+
+const commandDefinitionSchema = z.union([
+    executableCommandSchema,
+    parentCommandSchema,
+]);
+
+// Main command schema (string, function, or definition)
+export const commandSchema: z.ZodType<any> = z.union([
+    z.string(),
+    commandFunctionSchema,
+    commandDefinitionSchema,
+]);
+
+// Main config schema
+export const axogenConfigSchema = z
+    .object({
+        watch: z.array(z.string()).optional(),
+        targets: z.record(z.string(), targetSchema).optional(),
+        commands: z.record(z.string(), commandSchema).optional(),
+    })
+    .strict();
+
+// Type exports (inferred from schemas)
+export type EnvTarget = z.infer<typeof envTargetSchema>;
+export type JsonTarget = z.infer<typeof jsonTargetSchema>;
+export type YamlTarget = z.infer<typeof yamlTargetSchema>;
+export type TomlTarget = z.infer<typeof tomlTargetSchema>;
+export type TemplateTarget = z.infer<typeof templateTargetSchema>;
+export type Target = z.infer<typeof targetSchema>;
+
+export type CommandOption = z.infer<typeof commandOptionSchema>;
+export type CommandArgument = z.infer<typeof commandArgumentSchema>;
+
 export interface CommandContext<
     TOptions extends Record<string, any> = Record<string, any>,
     TArgs extends readonly any[] = readonly any[],
 > {
-    /** Parsed command options (typed based on command definition) */
     options: TOptions;
-    /** Parsed command arguments (typed based on command definition) */
     args: TArgs;
-    /** Access to the full configuration */
     config: AxogenConfig;
 }
 
@@ -66,66 +179,45 @@ export type CommandFunction<
     TArgs extends readonly any[] = readonly any[],
 > = (context: CommandContext<TOptions, TArgs>) => Promise<void> | void;
 
-export interface CommandOption {
-    /** Option flags (e.g., '-f, --file <path>' or '-v, --verbose') */
-    flags: string;
-    /** Help description for this option */
-    description?: string;
-    /** Default value if not provided */
-    default?: any;
-    /** Valid choices for this option */
-    choices?: string[];
-    /** Whether this is a required option */
-    required?: boolean;
-    /** Custom parser function */
-    parser?: (value: string, previous?: any) => any;
-    /** Environment variable to check for value */
-    env?: string;
-}
+export type ExecutableCommandDefinition = z.infer<
+    typeof executableCommandSchema
+>;
+export type ParentCommandDefinition = z.infer<typeof parentCommandSchema>;
+export type CommandDefinition = z.infer<typeof commandDefinitionSchema>;
+export type Command = z.infer<typeof commandSchema>;
 
-export interface CommandArgument {
-    /** Argument syntax (e.g., '<name>', '[name]', '<files...>') */
-    syntax: string;
-    /** Help description for this argument */
-    description?: string;
-    /** Default value for optional arguments */
-    default?: any;
-    /** Custom parser function */
-    parser?: (value: string) => any;
-}
+export type AxogenConfig = z.infer<typeof axogenConfigSchema>;
 
-// Command Definitions - Either executable OR parent with subcommands
-export interface ExecutableCommandDefinition {
-    /** Help text for this command */
-    help?: string;
-    /** Command options (flags) */
-    options?: CommandOption[];
-    /** Command arguments (positional) */
-    arguments?: CommandArgument[];
-    /** Command execution */
-    exec: CommandFunction | string;
-    /** Cannot have subcommands if executable */
-    subcommands?: never;
-}
-
-export interface ParentCommandDefinition {
-    /** Help text for this command */
-    help?: string;
-    /** Nested subcommands */
-    subcommands: Record<string, Command>;
-    /** Cannot execute if it has subcommands */
-    exec?: never;
-    /** Parent commands don't have their own options/arguments */
-    options?: never;
-    arguments?: never;
-}
-
-export type CommandDefinition =
-    | ExecutableCommandDefinition
-    | ParentCommandDefinition;
-
-export type Command = string | CommandFunction | CommandDefinition;
-
-// Helper function type for defineConfig
+// Legacy compatibility
 export type ConfigFunction = () => AxogenConfig | Promise<AxogenConfig>;
 export type ConfigInput = AxogenConfig | ConfigFunction;
+
+// Helper function to validate targets with better error messages
+export function validateTarget(name: string, target: unknown): Target {
+    try {
+        return targetSchema.parse(target);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            const formattedError = error.issues
+                .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
+                .join("\n");
+            throw new Error(`Invalid target "${name}":\n${formattedError}`);
+        }
+        throw error;
+    }
+}
+
+// Helper function to validate commands with better error messages
+export function validateCommand(name: string, command: unknown): Command {
+    try {
+        return commandSchema.parse(command);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            const formattedError = error.issues
+                .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
+                .join("\n");
+            throw new Error(`Invalid command "${name}":\n${formattedError}`);
+        }
+        throw error;
+    }
+}
