@@ -63,6 +63,13 @@ nav:
     - Getting Started:
           - Installation: installation.md
           - Quick Start: getting-started.md
+    - Examples:
+          - Basic:
+                - Simple App: examples/basic/simple-app.md
+                - Multi-Format: examples/basic/multi-format.md
+                - With Commands: examples/basic/with-commands.md
+          - Real-World:
+                - Full-Stack Project: examples/real-world/fullstack.md
     - FAQ: faq.md
 
 extra:
