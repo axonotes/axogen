@@ -3,7 +3,7 @@ import type {EnvSchema, ParsedEnv, EnvConfig} from "../types";
 import {config} from "dotenv";
 
 config({
-    path: ".env",
+    path: ".env.axogen",
 });
 
 /**
@@ -85,7 +85,7 @@ function handleValidationError(
         }
 
         console.error(
-            "\n  💡 Tip: Check your .env file and ensure all required variables are set with correct values.\n"
+            "\n  💡 Tip: Check your .env.axogen file and ensure all required variables are set with correct values.\n"
         );
     }
 
