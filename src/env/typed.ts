@@ -1,5 +1,5 @@
 import {z} from "zod";
-import type {EnvSchema, ParsedEnv, EnvConfig} from "../types/env";
+import type {EnvSchema, ParsedEnv, EnvConfig} from "../types";
 import {config} from "dotenv";
 
 config({
