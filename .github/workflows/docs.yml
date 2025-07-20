@@ -5,11 +5,16 @@ on:
     pull_request:
         branches: [main]
 
+permissions:
+    contents: write
+
 jobs:
     deploy:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
             - uses: actions/setup-python@v4
               with:
                   python-version: 3.x
