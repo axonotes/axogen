@@ -356,7 +356,7 @@ function isSchemaCommand(command: AnyCommand): command is SchemaCommand {
 function createGlobalContext(verbose: boolean = false): CommandGlobalContext {
     return {
         cwd: process.cwd(),
-        env: process.env,
+        process_env: process.env,
         verbose,
     };
 }

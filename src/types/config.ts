@@ -74,7 +74,7 @@ export const targetSchema = z.discriminatedUnion("type", [
  */
 export interface CommandGlobalContext {
     cwd: string;
-    env: Record<string, string | undefined>;
+    process_env: Record<string, string | undefined>;
     verbose: boolean;
 }
 
@@ -163,6 +163,7 @@ export type AnyCommand =
     | SimpleCommandFunction
     | StringCommand
     | SchemaCommand
+    | SchemaCommand<any, any>
     | FunctionCommand
     | CommandGroup;
 

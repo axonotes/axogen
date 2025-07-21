@@ -69,7 +69,7 @@ export class CommandRunner {
                 shell: true,
                 stdio: "inherit",
                 cwd: options.global.cwd,
-                env: {...process.env, ...options.global.env},
+                env: {...process.env, ...options.global.process_env},
             });
 
             child.on("close", (code) => {
