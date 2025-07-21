@@ -4,6 +4,7 @@ import {config} from "dotenv";
 
 config({
     path: ".env.axogen",
+    quiet: true,
 });
 
 /**
