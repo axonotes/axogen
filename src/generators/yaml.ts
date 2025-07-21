@@ -15,11 +15,16 @@ export class YamlGenerator {
             // Process variables
             const processedVariables = this.processVariables(target.variables);
 
-            // Add metadata header
-            const dataWithMeta = this.addMetadata(processedVariables, target);
+            let data: Record<string, any>;
+            if (target.generate_meta) {
+                // Add metadata header fields
+                data = this.addMetadata(processedVariables, target);
+            } else {
+                data = processedVariables;
+            }
 
             // Generate YAML using js-yaml
-            const yamlContent = yaml.dump(dataWithMeta, {
+            const yamlContent = yaml.dump(data, {
                 indent: options.indent,
                 lineWidth: options.lineWidth,
                 noRefs: options.noRefs,

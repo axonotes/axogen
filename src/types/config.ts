@@ -10,6 +10,7 @@ const baseTargetSchema = z.object({
         message: "Target path must be a string",
     }),
     variables: z.record(z.string(), z.any()).optional().default({}),
+    generate_meta: z.boolean().default(false).optional(),
 });
 
 // Target schemas - with strict validation

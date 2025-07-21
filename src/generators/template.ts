@@ -33,11 +33,17 @@ export class TemplateGenerator {
             // Process variables to handle complex types
             const processedVariables = this.processVariables(target.variables);
 
-            // Add metadata to template context
-            const templateContext = this.addTemplateContext(
-                processedVariables,
-                target
-            );
+            let templateContext: Record<string, any>;
+            if (target.generate_meta) {
+                // Add metadata to template context
+                templateContext = this.addTemplateContext(
+                    processedVariables,
+                    target
+                );
+            } else {
+                // Use variables directly without metadata
+                templateContext = processedVariables;
+            }
 
             // Process template based on engine
             const engine = target.engine ?? "nunjucks";

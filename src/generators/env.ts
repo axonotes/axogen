@@ -26,11 +26,13 @@ export class EnvGenerator {
             }
         };
 
-        // Add metadata as env variables
-        const metaVariables = this.createMetaVariables(target);
-        flattenSortAndAppend(metaVariables);
+        if (target.generate_meta) {
+            // Add metadata as env variables
+            const metaVariables = this.createMetaVariables(target);
+            flattenSortAndAppend(metaVariables);
 
-        lines.push(""); // Add a blank line after metadata
+            lines.push(""); // Add a blank line after metadata
+        }
 
         // Process variables to handle complex types
         const processedVariables = this.processVariables(target.variables);

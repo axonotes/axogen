@@ -8,11 +8,16 @@ export class TomlGenerator {
             // Process variables to handle non-TOML-serializable types
             const processedVariables = this.processVariables(target.variables);
 
-            // Add metadata
-            const dataWithMeta = this.addMetadata(processedVariables, target);
+            let data: Record<string, any>;
+            if (target.generate_meta) {
+                // Add metadata header fields
+                data = this.addMetadata(processedVariables, target);
+            } else {
+                data = processedVariables;
+            }
 
             // Generate TOML using the library
-            const tomlContent = TOML.stringify(dataWithMeta);
+            const tomlContent = TOML.stringify(data);
 
             // Add header comments
             const headerLines = [

@@ -9,8 +9,13 @@ export class JsonGenerator {
             // Process variables to ensure they're JSON serializable
             const processedVariables = this.processVariables(target.variables);
 
-            // Add metadata header fields
-            const output = this.addMetadata(processedVariables, target);
+            let output: Record<string, any>;
+            if (target.generate_meta) {
+                // Add metadata header fields
+                output = this.addMetadata(processedVariables, target);
+            } else {
+                output = processedVariables;
+            }
 
             // Generate JSON with specified indentation
             return JSON.stringify(output, null, indent);
