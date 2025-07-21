@@ -60,9 +60,6 @@ function buildSchemaCommand(
         const rawOptions = commandObj.opts();
         const rawArgs = args.slice(0, -1);
 
-        console.log("Raw parsed options:", rawOptions);
-        console.log("Raw parsed args:", rawArgs);
-
         try {
             // Let Zod handle ALL the type conversion and validation
             const validatedOptions = command.options
