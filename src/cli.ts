@@ -3,7 +3,9 @@ import {getVersion} from "./version";
 import {loadConfig} from "./core/config";
 import {buildDynamicCommands} from "./cli-helpers/builder";
 import {createGenerateCommand} from "./cli-helpers/commands/generate";
-import {pretty, configurePretty, LogLevel} from "./utils/pretty";
+import {createThemeCommand} from "./cli-helpers/commands/theme";
+import {pretty, configurePretty, LogLevel, setTheme} from "./utils/pretty";
+import {themes, type ThemeName} from "./utils/themes";
 import type {AxogenConfig} from "./types";
 
 async function createCLI(): Promise<Command> {
@@ -17,6 +19,40 @@ async function createCLI(): Promise<Command> {
     cli.option("--verbose", "Enable verbose logging");
     cli.option("--quiet", "Suppress non-essential output");
     cli.option("--no-color", "Disable colored output");
+    cli.option(
+        "--theme <name>",
+        `Color theme to use (${Object.keys(themes).join(", ")})`,
+        process.env.AXOGEN_THEME || "doom-one" // Default theme
+    );
+
+    // Configure pretty printing based on global options early
+    cli.hook("preAction", (thisCommand) => {
+        const opts = thisCommand.optsWithGlobals();
+
+        // Validate and set theme
+        if (opts.theme && !(opts.theme in themes)) {
+            console.error(
+                `❌ Invalid theme "${opts.theme}". Available themes: ${Object.keys(themes).join(", ")}`
+            );
+            process.exit(1);
+        }
+
+        configurePretty({
+            verbose: opts.verbose || false,
+            logLevel: opts.quiet
+                ? LogLevel.WARN
+                : opts.verbose
+                  ? LogLevel.DEBUG
+                  : LogLevel.INFO,
+            colorEnabled:
+                !opts.noColor && !process.env.NO_COLOR && process.stdout.isTTY,
+            theme: opts.theme as ThemeName,
+        });
+
+        if (opts.theme) {
+            setTheme(opts.theme as ThemeName);
+        }
+    });
 
     // Load config once
     let config: AxogenConfig;
@@ -32,6 +68,7 @@ async function createCLI(): Promise<Command> {
 
     // Add built-in commands (pass config to them)
     cli.addCommand(createGenerateCommand(config));
+    cli.addCommand(createThemeCommand());
 
     // Add dynamic commands from config to the "run" command
     const runCommand = new Command("run").description(
@@ -48,21 +85,6 @@ async function createCLI(): Promise<Command> {
     }
 
     cli.addCommand(runCommand);
-
-    // Configure pretty printing based on global options
-    cli.hook("preAction", (thisCommand) => {
-        const opts = thisCommand.optsWithGlobals();
-        configurePretty({
-            verbose: opts.verbose || false,
-            logLevel: opts.quiet
-                ? LogLevel.WARN
-                : opts.verbose
-                  ? LogLevel.DEBUG
-                  : LogLevel.INFO,
-            colorEnabled:
-                !opts.noColor && !process.env.NO_COLOR && process.stdout.isTTY,
-        });
-    });
 
     return cli;
 }

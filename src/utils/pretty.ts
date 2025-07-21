@@ -1,32 +1,7 @@
 // utils/pretty.ts
 
 import ansis from "ansis";
-
-/**
- * Catppuccin Mocha-inspired color palette
- * Carefully chosen for excellent contrast and harmony
- */
-const colors = {
-    // Status colors (most important)
-    success: "#a6e3a1", // Green - completions, success
-    error: "#f38ba8", // Red - failures, errors
-    warning: "#f9e2af", // Yellow - warnings, cautions
-    info: "#89b4fa", // Blue - information, files
-
-    // Secondary colors
-    accent: "#cba6f7", // Mauve - highlights, brands
-    muted: "#6c7086", // Surface2 - secondary text
-    subtle: "#585b70", // Overlay1 - very subtle text
-
-    // Special purpose
-    file: "#94e2d5", // Teal - file operations
-    command: "#fab387", // Peach - command execution
-    debug: "#b4befe", // Lavender - debug information
-
-    // Neutral tones
-    text: "#cdd6f4", // Main text color
-    dimmed: "#a6adc8", // Subtext0 - dimmed text
-} as const;
+import {getTheme, type ThemeName, themes, listThemes} from "./themes";
 
 /**
  * Log levels for controlling output verbosity
@@ -46,20 +21,53 @@ interface PrettyConfig {
     logLevel: LogLevel;
     verbose: boolean;
     colorEnabled: boolean;
+    theme: ThemeName;
 }
 
 let config: PrettyConfig = {
     logLevel: LogLevel.INFO,
     verbose: false,
     colorEnabled: !process.env.NO_COLOR && process.stdout.isTTY,
+    theme: (process.env.AXOGEN_THEME as ThemeName) || "doom-one",
 };
+
+// Get current theme
+let currentTheme = getTheme(config.theme);
 
 /**
  * Configure the pretty print system
  */
 export function configurePretty(options: Partial<PrettyConfig>): void {
     config = {...config, ...options};
+
+    // Update theme if changed
+    if (options.theme) {
+        currentTheme = getTheme(options.theme);
+    }
 }
+
+/**
+ * Change the current theme
+ */
+export function setTheme(themeName: ThemeName): void {
+    config.theme = themeName;
+    currentTheme = getTheme(themeName);
+}
+
+/**
+ * Get current theme info
+ */
+export function getCurrentTheme() {
+    return {
+        name: currentTheme.name,
+        description: currentTheme.description,
+    };
+}
+
+/**
+ * Export theme utilities
+ */
+export {listThemes, themes};
 
 /**
  * Check if we should output colors
@@ -92,7 +100,9 @@ export const pretty = {
      */
     success: (message: string): void => {
         if (!shouldLog(LogLevel.INFO)) return;
-        console.log(`${colorize("✅", colors.success)} ${message}`);
+        console.log(
+            `${colorize("✅", currentTheme.colors.success)} ${message}`
+        );
     },
 
     /**
@@ -100,7 +110,9 @@ export const pretty = {
      */
     error: (message: string): void => {
         if (!shouldLog(LogLevel.ERROR)) return;
-        console.error(`${colorize("❌", colors.error)} ${message}`);
+        console.error(
+            `${colorize("❌", currentTheme.colors.error)} ${message}`
+        );
     },
 
     /**
@@ -108,7 +120,9 @@ export const pretty = {
      */
     warn: (message: string): void => {
         if (!shouldLog(LogLevel.WARN)) return;
-        console.warn(`${colorize("⚠️ ", colors.warning)} ${message}`);
+        console.warn(
+            `${colorize("⚠️ ", currentTheme.colors.warning)} ${message}`
+        );
     },
 
     /**
@@ -116,7 +130,7 @@ export const pretty = {
      */
     info: (message: string): void => {
         if (!shouldLog(LogLevel.INFO)) return;
-        console.log(`${colorize("ℹ️ ", colors.info)} ${message}`);
+        console.log(`${colorize("ℹ️ ", currentTheme.colors.info)} ${message}`);
     },
 
     /**
@@ -125,16 +139,16 @@ export const pretty = {
     debug: (message: string): void => {
         if (!shouldLog(LogLevel.DEBUG)) return;
         console.log(
-            `${colorize("🐛", colors.debug)} ${colorize(message, colors.dimmed)}`
+            `${colorize("🐛", currentTheme.colors.debug)} ${colorize(message, currentTheme.colors.dimmed)}`
         );
     },
 
     /**
-     * Progress/loading messages (cyan with rocket)
+     * Progress/loading messages (accent with rocket)
      */
     loading: (message: string): void => {
         if (!shouldLog(LogLevel.INFO)) return;
-        console.log(`${colorize("🚀", colors.accent)} ${message}`);
+        console.log(`${colorize("🚀", currentTheme.colors.accent)} ${message}`);
     },
 
     /**
@@ -142,60 +156,80 @@ export const pretty = {
      */
     complete: (message: string): void => {
         if (!shouldLog(LogLevel.INFO)) return;
-        console.log(`${colorize("🎉", colors.success)} ${message}`);
+        console.log(
+            `${colorize("🎉", currentTheme.colors.success)} ${message}`
+        );
     },
 
     /**
-     * File operation messages (teal with document)
+     * File operation messages (file color with document)
      */
     file: (message: string): void => {
         if (!shouldLog(LogLevel.INFO)) return;
-        console.log(`${colorize("📄", colors.file)} ${message}`);
+        console.log(`${colorize("📄", currentTheme.colors.file)} ${message}`);
     },
 
     /**
-     * Configuration messages (purple with gear)
+     * Configuration messages (accent with gear)
      */
     config: (message: string): void => {
         if (!shouldLog(LogLevel.INFO)) return;
-        console.log(`${colorize("⚙️ ", colors.accent)} ${message}`);
+        console.log(
+            `${colorize("⚙️ ", currentTheme.colors.accent)} ${message}`
+        );
     },
 
     /**
-     * Command execution messages (peach with arrow)
+     * Command execution messages (command color with arrow)
      */
     command: (message: string): void => {
         if (!shouldLog(LogLevel.INFO)) return;
-        console.log(`${colorize("▶️ ", colors.command)} ${message}`);
+        console.log(
+            `${colorize("▶️ ", currentTheme.colors.command)} ${message}`
+        );
     },
 
     /**
-     * Stop/termination messages (red with stop sign)
+     * Stop/termination messages (error color with stop sign)
      */
     stop: (message: string): void => {
         if (!shouldLog(LogLevel.INFO)) return;
-        console.log(`${colorize("🛑", colors.error)} ${message}`);
+        console.log(`${colorize("🛑", currentTheme.colors.error)} ${message}`);
     },
 
     /**
      * Raw colored text utilities
      */
     text: {
-        success: (text: string): string => colorize(text, colors.success),
-        error: (text: string): string => colorize(text, colors.error),
-        warning: (text: string): string => colorize(text, colors.warning),
-        info: (text: string): string => colorize(text, colors.info),
-        accent: (text: string): string => colorize(text, colors.accent),
-        muted: (text: string): string => colorize(text, colors.muted),
-        subtle: (text: string): string => colorize(text, colors.subtle),
-        file: (text: string): string => colorize(text, colors.file),
-        command: (text: string): string => colorize(text, colors.command),
-        debug: (text: string): string => colorize(text, colors.debug),
-        dimmed: (text: string): string => colorize(text, colors.dimmed),
+        success: (text: string): string =>
+            colorize(text, currentTheme.colors.success),
+        error: (text: string): string =>
+            colorize(text, currentTheme.colors.error),
+        warning: (text: string): string =>
+            colorize(text, currentTheme.colors.warning),
+        info: (text: string): string =>
+            colorize(text, currentTheme.colors.info),
+        accent: (text: string): string =>
+            colorize(text, currentTheme.colors.accent),
+        muted: (text: string): string =>
+            colorize(text, currentTheme.colors.muted),
+        subtle: (text: string): string =>
+            colorize(text, currentTheme.colors.subtle),
+        file: (text: string): string =>
+            colorize(text, currentTheme.colors.file),
+        command: (text: string): string =>
+            colorize(text, currentTheme.colors.command),
+        debug: (text: string): string =>
+            colorize(text, currentTheme.colors.debug),
+        dimmed: (text: string): string =>
+            colorize(text, currentTheme.colors.dimmed),
         bold: (text: string): string =>
             shouldUseColors() ? ansis.bold(text) : text,
         dim: (text: string): string =>
             shouldUseColors() ? ansis.dim(text) : text,
+        loading(text: string) {
+            return `${colorize("🚀", currentTheme.colors.accent)} ${text}`;
+        },
     },
 
     /**
@@ -226,21 +260,25 @@ export const pretty = {
             );
 
             if (missing.length > 0) {
-                console.log(`  ${colorize("Missing Required:", colors.error)}`);
+                console.log(
+                    `  ${colorize("Missing Required:", currentTheme.colors.error)}`
+                );
                 missing.forEach((error) => {
                     console.log(
-                        `    ${colorize("•", colors.error)} ${error.field || error.message}`
+                        `    ${colorize("•", currentTheme.colors.error)} ${error.field || error.message}`
                     );
                 });
                 if (typeErrors.length > 0 || invalid.length > 0) console.log();
             }
 
             if (typeErrors.length > 0) {
-                console.log(`  ${colorize("Type Errors:", colors.error)}`);
+                console.log(
+                    `  ${colorize("Type Errors:", currentTheme.colors.error)}`
+                );
                 typeErrors.forEach((error) => {
                     const field = error.field ? `${error.field}: ` : "";
                     console.log(
-                        `    ${colorize("•", colors.error)} ${field}${error.message}`
+                        `    ${colorize("•", currentTheme.colors.error)} ${field}${error.message}`
                     );
                 });
                 if (invalid.length > 0) console.log();
@@ -248,12 +286,12 @@ export const pretty = {
 
             if (invalid.length > 0) {
                 console.log(
-                    `  ${colorize("Validation Errors:", colors.error)}`
+                    `  ${colorize("Validation Errors:", currentTheme.colors.error)}`
                 );
                 invalid.forEach((error) => {
                     const field = error.field ? `${error.field}: ` : "";
                     console.log(
-                        `    ${colorize("•", colors.error)} ${field}${error.message}`
+                        `    ${colorize("•", currentTheme.colors.error)} ${field}${error.message}`
                     );
                 });
             }
@@ -265,7 +303,7 @@ export const pretty = {
         missing: (field: string): void => {
             if (!shouldLog(LogLevel.ERROR)) return;
             console.log(
-                `    ${colorize("•", colors.error)} Missing required: ${colorize(field, colors.accent)}`
+                `    ${colorize("•", currentTheme.colors.error)} Missing required: ${colorize(field, currentTheme.colors.accent)}`
             );
         },
 
@@ -276,14 +314,14 @@ export const pretty = {
         ): void => {
             if (!shouldLog(LogLevel.ERROR)) return;
             console.log(
-                `    ${colorize("•", colors.error)} ${colorize(field, colors.accent)}: expected ${expected}, got ${received}`
+                `    ${colorize("•", currentTheme.colors.error)} ${colorize(field, currentTheme.colors.accent)}: expected ${expected}, got ${received}`
             );
         },
 
         invalid: (field: string, message: string): void => {
             if (!shouldLog(LogLevel.ERROR)) return;
             console.log(
-                `    ${colorize("•", colors.error)} ${colorize(field, colors.accent)}: ${message}`
+                `    ${colorize("•", currentTheme.colors.error)} ${colorize(field, currentTheme.colors.accent)}: ${message}`
             );
         },
     },
@@ -354,7 +392,7 @@ export const pretty = {
             const failures = results.filter((r) => !r.success);
 
             console.log(); // Breathing room
-            console.log(`${colorize("Results:", colors.accent)}`);
+            console.log(`${colorize("Results:", currentTheme.colors.accent)}`);
 
             // Show results
             results.forEach((result) => {
@@ -383,6 +421,84 @@ export const pretty = {
     },
 
     /**
+     * Theme utilities
+     */
+    theme: {
+        /**
+         * List all available themes
+         */
+        list: (): void => {
+            if (!shouldLog(LogLevel.INFO)) return;
+
+            console.log(
+                `${colorize("Available themes:", currentTheme.colors.accent)}`
+            );
+            console.log();
+
+            const themeList = listThemes();
+            const currentThemeName = getCurrentTheme().name;
+
+            themeList.forEach((theme) => {
+                const marker = theme.name === currentThemeName ? "●" : "○";
+                const nameColor =
+                    theme.name === currentThemeName
+                        ? currentTheme.colors.accent
+                        : currentTheme.colors.text;
+                console.log(
+                    `  ${colorize(marker, currentTheme.colors.accent)} ${colorize(theme.name, nameColor)} - ${theme.description}`
+                );
+            });
+        },
+
+        /**
+         * Show current theme info
+         */
+        current: (): void => {
+            if (!shouldLog(LogLevel.INFO)) return;
+            const current = getCurrentTheme();
+            pretty.info(
+                `Current theme: ${pretty.text.accent(current.name)} - ${current.description}`
+            );
+        },
+
+        /**
+         * Preview theme colors
+         */
+        preview: (themeName?: ThemeName): void => {
+            if (!shouldLog(LogLevel.INFO)) return;
+
+            const theme = themeName ? getTheme(themeName) : currentTheme;
+
+            console.log(
+                `${colorize(`${theme.name} theme preview:`, theme.colors.accent)}`
+            );
+            console.log();
+            console.log(
+                `${colorize("✅", theme.colors.success)} Success messages`
+            );
+            console.log(`${colorize("❌", theme.colors.error)} Error messages`);
+            console.log(
+                `${colorize("⚠️ ", theme.colors.warning)} Warning messages`
+            );
+            console.log(`${colorize("ℹ️ ", theme.colors.info)} Info messages`);
+            console.log(
+                `${colorize("🚀", theme.colors.accent)} Loading/accent messages`
+            );
+            console.log(`${colorize("📄", theme.colors.file)} File operations`);
+            console.log(
+                `${colorize("▶️ ", theme.colors.command)} Command execution`
+            );
+            console.log(
+                `${colorize("🐛", theme.colors.debug)} Debug information`
+            );
+            console.log();
+            console.log(
+                `Text colors: ${colorize("normal", theme.colors.text)} ${colorize("muted", theme.colors.muted)} ${colorize("subtle", theme.colors.subtle)}`
+            );
+        },
+    },
+
+    /**
      * Formatting utilities
      */
     format: {
@@ -393,10 +509,15 @@ export const pretty = {
             if (!shouldLog(LogLevel.INFO)) return;
             const line = colorize(
                 "═".repeat(Math.max(title.length + 4, 40)),
-                colors.accent
+                currentTheme.colors.accent
             );
             console.log(line);
-            console.log(colorize(`  ${title.toUpperCase()}  `, colors.accent));
+            console.log(
+                colorize(
+                    `  ${title.toUpperCase()}  `,
+                    currentTheme.colors.accent
+                )
+            );
             console.log(line);
         },
 
@@ -408,9 +529,16 @@ export const pretty = {
             if (text) {
                 const padding = Math.max(0, Math.floor((40 - text.length) / 2));
                 const line = "─".repeat(padding);
-                console.log(colorize(`${line} ${text} ${line}`, colors.muted));
+                console.log(
+                    colorize(
+                        `${line} ${text} ${line}`,
+                        currentTheme.colors.muted
+                    )
+                );
             } else {
-                console.log(colorize("─".repeat(40), colors.muted));
+                console.log(
+                    colorize("─".repeat(40), currentTheme.colors.muted)
+                );
             }
         },
 
@@ -420,7 +548,9 @@ export const pretty = {
         bullet: (text: string, indent: number = 0): void => {
             if (!shouldLog(LogLevel.INFO)) return;
             const spaces = "  ".repeat(indent);
-            console.log(`${spaces}${colorize("•", colors.accent)} ${text}`);
+            console.log(
+                `${spaces}${colorize("•", currentTheme.colors.accent)} ${text}`
+            );
         },
 
         /**
@@ -430,7 +560,7 @@ export const pretty = {
             if (!shouldLog(LogLevel.INFO)) return;
             const spaces = "  ".repeat(indent);
             console.log(
-                `${spaces}${colorize(`${number}.`, colors.accent)} ${text}`
+                `${spaces}${colorize(`${number}.`, currentTheme.colors.accent)} ${text}`
             );
         },
 
@@ -444,7 +574,7 @@ export const pretty = {
         ): void => {
             if (!shouldLog(LogLevel.INFO)) return;
             console.log(
-                `${colorize(key, colors.accent)}${colorize(separator, colors.muted)} ${value}`
+                `${colorize(key, currentTheme.colors.accent)}${colorize(separator, currentTheme.colors.muted)} ${value}`
             );
         },
 
@@ -457,7 +587,7 @@ export const pretty = {
             rows.forEach(({key, value}) => {
                 const paddedKey = key.padEnd(maxKeyLength);
                 console.log(
-                    `  ${colorize(paddedKey, colors.accent)} ${colorize("│", colors.muted)} ${value}`
+                    `  ${colorize(paddedKey, currentTheme.colors.accent)} ${colorize("│", currentTheme.colors.muted)} ${value}`
                 );
             });
         },
@@ -472,7 +602,7 @@ export const pretty = {
          */
         command: (name: string): string => {
             if (!shouldUseColors()) return `[${name}] `;
-            return `${colorize(`[${name}]`, colors.command)} `;
+            return `${colorize(`[${name}]`, currentTheme.colors.command)} `;
         },
     },
 };
@@ -489,9 +619,13 @@ export const simple = {
 };
 
 /**
- * Export colors for direct use if needed
+ * Export current theme colors for direct use if needed
  */
-export {colors};
+export const colors = new Proxy({} as any, {
+    get: (target, prop) => {
+        return currentTheme.colors[prop as keyof typeof currentTheme.colors];
+    },
+});
 
 /**
  * Legacy compatibility
