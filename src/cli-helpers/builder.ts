@@ -7,6 +7,7 @@ import type {
     SchemaCommand,
 } from "../types";
 import {commandRunner} from "./runner";
+import {pretty} from "../utils/pretty";
 
 export function buildDynamicCommands(cli: Command, config: AxogenConfig): void {
     if (!config.commands) return;
@@ -82,17 +83,40 @@ function buildSchemaCommand(
             });
         } catch (error) {
             if (error instanceof z.ZodError) {
-                console.error("❌ Validation error:");
-                for (const issue of error.issues) {
-                    console.error(
-                        `  ${issue.path.join(".")}: ${issue.message}`
-                    );
-                }
+                const validationErrors = error.issues.map((issue) => {
+                    const field = issue.path.join(".");
+
+                    // Determine error type
+                    let type: "missing" | "invalid" | "type" = "invalid";
+                    if (
+                        issue.code === "invalid_type" &&
+                        issue.input === undefined
+                    ) {
+                        type = "missing";
+                    } else if (issue.code === "invalid_type") {
+                        type = "type";
+                    }
+
+                    return {
+                        field,
+                        message: issue.message,
+                        type,
+                    };
+                });
+
+                pretty.validation.errorGroup(
+                    "Command validation failed",
+                    validationErrors
+                );
+                console.log();
+                pretty.info(
+                    `${pretty.text.dimmed("💡 Check your command arguments and options.")}`
+                );
+
                 process.exit(1);
             }
-            console.error(
-                "❌ Command failed:",
-                error instanceof Error ? error.message : error
+            pretty.error(
+                `Command failed: ${error instanceof Error ? error.message : error}`
             );
             process.exit(1);
         }
@@ -318,13 +342,12 @@ function buildSimpleCommand(
             });
 
             if (!result.success) {
-                console.error(`❌ Command failed: ${result.error}`);
+                pretty.error(`Command failed: ${result.error}`);
                 process.exit(result.exitCode || 1);
             }
         } catch (error) {
-            console.error(
-                "❌ Command failed:",
-                error instanceof Error ? error.message : error
+            pretty.error(
+                `Command failed: ${error instanceof Error ? error.message : error}`
             );
             process.exit(1);
         }

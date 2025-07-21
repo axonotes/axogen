@@ -9,24 +9,17 @@ import {
     existsSync,
     readFileSync,
 } from "fs";
+import {pretty} from "./src/utils/pretty";
 
 // Read version from package.json
 const packageJson = JSON.parse(readFileSync("package.json", "utf-8"));
 const version = packageJson.version;
 
-// Pretty console output
-const log = {
-    info: (msg: string) => console.log(`ℹ️ ${msg}`),
-    success: (msg: string) => console.log(`--- Success: ${msg} ---`),
-    error: (msg: string) => console.error(`❌ ${msg}`),
-    step: (msg: string) => console.log(`🔨 ${msg}`),
-    warn: (msg: string) => console.log(`⚠️  ${msg}`),
-};
-
 async function main() {
     const startTime = Date.now();
 
-    log.step("Building axogen CLI and library...");
+    pretty.format.header("Building Axogen CLI and Library");
+    console.log(); // Add some spacing
 
     setupDirectories();
     await typeCheck();
@@ -38,7 +31,7 @@ async function main() {
 
     if (!libraryResult || !cliResult.success) {
         if (!libraryResult) {
-            log.error("Library build failed!");
+            pretty.error("Library build failed!");
         }
         if (!cliResult.success) {
             handleBuildFailure(cliResult);
@@ -50,12 +43,18 @@ async function main() {
     cleanup();
 
     const duration = Date.now() - startTime;
-    log.success(`Build completed in ${duration}ms`);
-    log.info('Run "./bin/axogen --version" to test');
-    log.info("Library built with tsup for better IDE support!");
+    console.log(); // Add spacing before final summary
+    pretty.complete(`Build completed in ${duration}ms`);
+
+    console.log(); // Add spacing
+    pretty.format.divider("Next Steps");
+    pretty.info(`Run ${pretty.text.accent("./bin/axogen --version")} to test`);
+    pretty.info("Library built with tsup for better IDE support!");
 }
 
 function setupDirectories() {
+    pretty.loading("Preparing directories...");
+
     const dirs = ["bin", "bin/build", "dist"];
 
     // Clean existing bin directory
@@ -70,11 +69,11 @@ function setupDirectories() {
 
     // Create fresh directories
     dirs.forEach((dir) => mkdirSync(dir, {recursive: true}));
-    log.info("Directories prepared");
+    pretty.success("Directories prepared");
 }
 
 async function typeCheck() {
-    log.step("Checking TypeScript...");
+    pretty.loading("Checking TypeScript...");
 
     try {
         // Use bun to type-check without emitting files
@@ -87,23 +86,25 @@ async function typeCheck() {
         const errorOutput = await new Response(result.stderr).text();
 
         if (errorOutput.trim() !== "") {
-            log.error("TypeScript errors found!");
+            pretty.error("TypeScript errors found!");
             console.error(errorOutput);
             process.exit(1);
         }
 
-        log.info("TypeScript check passed");
+        pretty.success("TypeScript check passed");
     } catch (error) {
         // Fallback: if tsc not available, warn but continue
-        log.warn("TypeScript compiler not found, skipping type check");
-        log.info("Install typescript globally: bun add -g typescript");
+        pretty.warn("TypeScript compiler not found, skipping type check");
+        pretty.info(
+            `Install typescript globally: ${pretty.text.accent("bun add -g typescript")}`
+        );
     }
 }
 
 async function buildCLI() {
-    log.step("Compiling CLI with bun...");
+    pretty.loading("Compiling CLI with bun...");
 
-    return await build({
+    const result = await build({
         entrypoints: ["src/cli.ts"],
         outdir: "bin/build",
         target: "node",
@@ -111,10 +112,16 @@ async function buildCLI() {
             __VERSION__: `"${version}"`,
         },
     });
+
+    if (result.success) {
+        pretty.success("CLI compiled successfully");
+    }
+
+    return result;
 }
 
 async function buildLibraryWithTsup() {
-    log.step("Building library with tsup...");
+    pretty.loading("Building library with tsup...");
 
     try {
         // Check if tsup is available
@@ -161,17 +168,17 @@ async function buildLibraryWithTsup() {
         await result.exited;
 
         if (result.exitCode !== 0) {
-            log.error("tsup build failed!");
+            pretty.error("tsup build failed!");
             if (errorOutput) console.error(errorOutput);
             if (output) console.log(output);
             return false;
         }
 
-        log.info("Library built successfully with tsup");
+        pretty.success("Library built successfully with tsup");
         return true;
     } catch (error) {
-        log.error("tsup not available, falling back to bun build");
-        log.info("Install tsup: bun add -D tsup");
+        pretty.warn("tsup not available, falling back to bun build");
+        pretty.info(`Install tsup: ${pretty.text.accent("bun add -D tsup")}`);
 
         // Fallback to original bun build method
         return await buildLibraryFallback();
@@ -179,7 +186,7 @@ async function buildLibraryWithTsup() {
 }
 
 async function buildLibraryFallback() {
-    log.step("Building library with bun (fallback)...");
+    pretty.loading("Building library with bun (fallback)...");
 
     const result = await build({
         entrypoints: ["src/index.ts"],
@@ -193,6 +200,7 @@ async function buildLibraryFallback() {
     });
 
     if (result.success) {
+        pretty.success("Library built with bun");
         // Also generate types with tsc
         await generateTypes();
     }
@@ -201,7 +209,7 @@ async function buildLibraryFallback() {
 }
 
 async function generateTypes() {
-    log.step("Generating TypeScript declarations...");
+    pretty.loading("Generating TypeScript declarations...");
 
     try {
         const result = Bun.spawn(
@@ -218,26 +226,34 @@ async function generateTypes() {
         const errorOutput = await new Response(result.stderr).text();
 
         if (errorOutput.trim() !== "") {
-            log.error("TypeScript declaration generation errors found!");
+            pretty.error("TypeScript declaration generation errors found!");
             console.error(errorOutput);
             process.exit(1);
         }
 
-        log.info("TypeScript declarations generated");
+        pretty.success("TypeScript declarations generated");
     } catch (error) {
-        log.warn("Could not generate TypeScript declarations");
-        log.info("Install typescript: bun add -D typescript");
+        pretty.warn("Could not generate TypeScript declarations");
+        pretty.info(
+            `Install typescript: ${pretty.text.accent("bun add -D typescript")}`
+        );
     }
 }
 
 function handleBuildFailure(result: Bun.BuildOutput) {
-    log.error("Build failed!");
+    pretty.error("Build failed!");
 
     if (result.logs.length > 0) {
-        console.log("\nBuild errors:");
-        result.logs.forEach((logEntry) => {
-            console.error(`  ${logEntry}`);
-        });
+        console.log();
+        pretty.format.divider("Build Errors");
+
+        const buildErrors = result.logs.map((logEntry) => ({
+            field: "Build",
+            message: logEntry.toString(),
+            type: "invalid" as const,
+        }));
+
+        pretty.validation.errorGroup("Build errors occurred", buildErrors);
     }
 
     cleanup();
@@ -245,7 +261,7 @@ function handleBuildFailure(result: Bun.BuildOutput) {
 }
 
 async function createExecutable() {
-    log.step("Creating executable...");
+    pretty.loading("Creating executable...");
 
     const builtCode = await Bun.file("bin/build/cli.js").text();
     const executableContent = `#!/usr/bin/env node
@@ -254,7 +270,7 @@ ${builtCode}`;
     writeFileSync("bin/axogen", executableContent);
     chmodSync("bin/axogen", "755");
 
-    log.info("Executable created at bin/axogen");
+    pretty.file("Executable created at bin/axogen");
 }
 
 function cleanup() {
@@ -265,6 +281,6 @@ function cleanup() {
 
 // Run the build
 main().catch((error) => {
-    log.error(`Unexpected error: ${error.message}`);
+    pretty.error(`Unexpected error: ${error.message}`);
     process.exit(1);
 });

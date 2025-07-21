@@ -3,6 +3,7 @@ import {getVersion} from "./version";
 import {loadConfig} from "./core/config";
 import {buildDynamicCommands} from "./cli-helpers/builder";
 import {createGenerateCommand} from "./cli-helpers/commands/generate";
+import {pretty, configurePretty, LogLevel} from "./utils/pretty";
 import type {AxogenConfig} from "./types";
 
 async function createCLI(): Promise<Command> {
@@ -14,6 +15,8 @@ async function createCLI(): Promise<Command> {
 
     // Global options
     cli.option("--verbose", "Enable verbose logging");
+    cli.option("--quiet", "Suppress non-essential output");
+    cli.option("--no-color", "Disable colored output");
 
     // Load config once
     let config: AxogenConfig;
@@ -21,9 +24,8 @@ async function createCLI(): Promise<Command> {
         config = await loadConfig();
     } catch (error) {
         // If config fails to load, still allow basic commands
-        console.warn(
-            "⚠️  Could not load config:",
-            error instanceof Error ? error.message : error
+        pretty.warn(
+            `Could not load config: ${error instanceof Error ? error.message : error}`
         );
         config = {};
     }
@@ -41,11 +43,26 @@ async function createCLI(): Promise<Command> {
     } else {
         // Add a default action to show available commands or a helpful message
         runCommand.action(() => {
-            console.log("ℹ️  No commands defined in config");
+            pretty.info("No commands defined in config");
         });
     }
 
     cli.addCommand(runCommand);
+
+    // Configure pretty printing based on global options
+    cli.hook("preAction", (thisCommand) => {
+        const opts = thisCommand.optsWithGlobals();
+        configurePretty({
+            verbose: opts.verbose || false,
+            logLevel: opts.quiet
+                ? LogLevel.WARN
+                : opts.verbose
+                  ? LogLevel.DEBUG
+                  : LogLevel.INFO,
+            colorEnabled:
+                !opts.noColor && !process.env.NO_COLOR && process.stdout.isTTY,
+        });
+    });
 
     return cli;
 }
@@ -54,6 +71,6 @@ async function createCLI(): Promise<Command> {
 createCLI()
     .then((cli) => cli.parse())
     .catch((error) => {
-        console.error("❌ Failed to initialize CLI:", error);
+        pretty.error(`Failed to initialize CLI: ${error}`);
         process.exit(1);
     });

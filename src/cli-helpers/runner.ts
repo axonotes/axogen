@@ -8,6 +8,7 @@ import type {
     SimpleCommandContext,
     AxogenConfig,
 } from "../types";
+import {pretty} from "../utils/pretty";
 
 export interface RunCommandOptions {
     config: AxogenConfig;
@@ -203,11 +204,31 @@ export class CommandRunner {
         const [subcommandName, ...remainingArgs] = options.args || [];
 
         if (!subcommandName) {
-            console.log(group.help || "Available subcommands:");
+            if (group.help) {
+                pretty.info(group.help);
+            } else {
+                pretty.info("Available subcommands:");
+            }
+
+            console.log(); // Add spacing
+
+            // Create a table-like display for commands
+            const commandRows: Array<{key: string; value: string}> = [];
+
             for (const [name, command] of Object.entries(group.commands)) {
                 const help = this.getCommandHelp(command);
-                console.log(`  ${name}${help ? ` - ${help}` : ""}`);
+                commandRows.push({
+                    key: name,
+                    value: help || "No description available",
+                });
             }
+
+            if (commandRows.length > 0) {
+                pretty.format.table(commandRows);
+            } else {
+                pretty.format.bullet("No subcommands available");
+            }
+
             return {success: true};
         }
 

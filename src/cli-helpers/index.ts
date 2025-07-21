@@ -3,6 +3,7 @@ export * from "./runner";
 
 import {spawn, ChildProcess} from "node:child_process";
 import {EventEmitter} from "node:events";
+import {pretty} from "../utils/pretty";
 
 /**
  * Execute a shell command and capture output
@@ -42,16 +43,6 @@ export function executeCommand(
         });
     });
 }
-
-// ANSI Colors
-const colors = {
-    reset: "\x1b[0m",
-    red: "\x1b[31m",
-    green: "\x1b[32m",
-    blue: "\x1b[34m",
-    yellow: "\x1b[33m",
-    cyan: "\x1b[36m",
-};
 
 export interface LiveExecOptions {
     cwd?: string;
@@ -112,8 +103,7 @@ export function liveExec(
         let isCleaningUp = false;
         let originalSigintListeners: NodeJS.SignalsListener[] = [];
 
-        // Show command start
-        console.log(`${colors.blue}🚀 Running:${colors.reset} ${command}`);
+        console.log(`${pretty.text.info("🚀 Running:")} ${command}`);
 
         // Spawn child process in its own process group for proper termination
         const child = spawn(command, {
@@ -145,7 +135,7 @@ export function liveExec(
                 const prefixedOutput = lines
                     .map((line: any) =>
                         line
-                            ? `${colors.cyan}[${outputPrefix}]${colors.reset} ${line}`
+                            ? `${pretty.prefix.command(outputPrefix)}${line}`
                             : line
                     )
                     .join("\n");
@@ -163,7 +153,7 @@ export function liveExec(
                 const prefixedOutput = lines
                     .map((line: any) =>
                         line
-                            ? `${colors.cyan}[${outputPrefix}]${colors.reset} ${line}`
+                            ? `${pretty.prefix.command(outputPrefix)}${line}`
                             : line
                     )
                     .join("\n");
@@ -233,18 +223,12 @@ export function liveExec(
             cleanup();
 
             if (wasTerminated) {
-                console.log(
-                    `${colors.red}🛑 Stopped:${colors.reset} ${command}`
-                );
+                pretty.stop(`Stopped: ${command}`);
             } else {
                 if (exitCode === 0) {
-                    console.log(
-                        `${colors.green}✅ Completed:${colors.reset} ${command}`
-                    );
+                    pretty.success(`Completed: ${command}`);
                 } else {
-                    console.log(
-                        `${colors.red}❌ Failed:${colors.reset} ${command} (exit code: ${exitCode})`
-                    );
+                    pretty.error(`Failed: ${command} (exit code: ${exitCode})`);
                 }
             }
 
@@ -256,7 +240,7 @@ export function liveExec(
 
         child.on("error", (error) => {
             cleanup();
-            console.log(`${colors.red}❌ Error:${colors.reset} ${command}`);
+            pretty.error(`Error: ${command}`);
             reject(error);
         });
 
@@ -323,5 +307,4 @@ export class InteractiveShell extends EventEmitter {
     }
 }
 
-// Legacy alias
 export const exec = executeCommand;

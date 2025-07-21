@@ -4,6 +4,7 @@ import {z} from "zod";
 import type {AxogenConfig, ConfigInput} from "../types";
 import {axogenConfigSchema} from "../types";
 import {createJiti} from "jiti";
+import {pretty} from "../utils/pretty";
 
 export class ConfigLoader {
     /** Load configuration from a file */
@@ -30,21 +31,43 @@ export class ConfigLoader {
             return axogenConfigSchema.parse(config);
         } catch (error) {
             if (error instanceof z.ZodError) {
-                // Use Zod's built-in error formatting or a simple custom format
-                const errorMessage = error.issues
-                    .map(
-                        (issue) =>
-                            `  • ${issue.path.join(".")}: ${issue.message}`
-                    )
-                    .join("\n");
+                const validationErrors = error.issues.map((issue) => {
+                    const field =
+                        issue.path.length > 0 ? issue.path.join(".") : "root";
 
-                throw new Error(
-                    `Configuration validation failed in ${resolvedPath}:\n${errorMessage}\n\n  💡 Check your config file structure.`
+                    // Determine error type
+                    let type: "missing" | "invalid" | "type" = "invalid";
+                    if (
+                        issue.code === "invalid_type" &&
+                        issue.input === undefined
+                    ) {
+                        type = "missing";
+                    } else if (issue.code === "invalid_type") {
+                        type = "type";
+                    }
+
+                    return {
+                        field,
+                        message: issue.message,
+                        type,
+                    };
+                });
+
+                pretty.validation.errorGroup(
+                    `Configuration validation failed in ${pretty.text.accent(resolvedPath)}`,
+                    validationErrors
                 );
+
+                console.log();
+                pretty.info(
+                    `${pretty.text.dimmed("💡 Check your config file structure.")}`
+                );
+
+                throw new Error("Configuration validation failed");
             }
 
             throw new Error(
-                `Failed to load config from ${resolvedPath}: ${
+                `Failed to load config from ${pretty.text.accent(resolvedPath)}: ${
                     error instanceof Error ? error.message : String(error)
                 }`
             );
@@ -59,7 +82,7 @@ export class ConfigLoader {
             });
         } catch (error) {
             throw new Error(
-                "jiti is required to load TypeScript config files. Install it with: bun add jiti"
+                `jiti is required to load TypeScript config files. Install it with: ${pretty.text.accent("bun add jiti")}`
             );
         }
     }
@@ -100,9 +123,10 @@ export class ConfigLoader {
             }
         }
 
-        throw new Error(
-            `No config file found. Looking for: ${defaultNames.join(", ")}`
-        );
+        const formattedNames = defaultNames
+            .map((name) => pretty.text.accent(name))
+            .join(", ");
+        throw new Error(`No config file found. Looking for: ${formattedNames}`);
     }
 }
 

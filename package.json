@@ -59,6 +59,7 @@
     "dependencies": {
         "@iarna/toml": "^2.2.5",
         "@types/js-yaml": "^4.0.9",
+        "ansis": "^4.1.0",
         "commander": "^14.0.0",
         "dotenv": "^17.2.0",
         "handlebars": "^4.7.8",

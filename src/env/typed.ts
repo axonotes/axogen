@@ -1,6 +1,7 @@
 import {z} from "zod";
 import type {EnvSchema, ParsedEnv, EnvConfig} from "../types";
 import {config} from "dotenv";
+import {pretty} from "../utils/pretty";
 
 config({
     path: ".env.axogen",
@@ -17,77 +18,64 @@ const DEFAULT_CONFIG: Required<EnvConfig> = {
 
 /**
  * Formats and displays Zod validation errors in a user-friendly way
- * Updated for Zod v4 error handling
+ * Updated for Zod v4 error handling with new pretty system
  */
 function handleValidationError(
     error: z.ZodError,
     config: Required<EnvConfig>
 ): void {
     if (!config.silent) {
-        console.error("❌ Environment variable validation failed:");
+        const validationErrors = error.issues.map((issue) => {
+            const field = issue.path.join(".");
 
-        // Group issues by type for better readability
-        const missingErrors = error.issues.filter(
-            (issue) =>
-                issue.code === "invalid_type" &&
-                "received" in issue &&
-                issue.received === "undefined"
-        );
-        const typeErrors = error.issues.filter(
-            (issue) =>
-                !(
-                    issue.code === "invalid_type" &&
-                    "received" in issue &&
-                    issue.received === "undefined"
-                )
-        );
+            // Determine error type based on Zod error codes
+            let type: "missing" | "invalid" | "type" = "invalid";
+            if (issue.code === "invalid_type" && issue.input === undefined) {
+                type = "missing";
+            } else if (issue.code === "invalid_type") {
+                type = "type";
+            }
 
-        if (missingErrors.length > 0) {
-            console.error("\n  Missing required variables:");
-            missingErrors.forEach((issue) => {
-                console.error(
-                    `    - ${issue.path.join(".")}: ${issue.message}`
-                );
-            });
-        }
-
-        if (typeErrors.length > 0) {
-            console.error("\n  Type validation errors:");
-            typeErrors.forEach((issue) => {
-                console.error(
-                    `    - ${issue.path.join(".")}: ${issue.message}`
-                );
-
-                // Add more specific error context for Zod v4
-                if (issue.code === "invalid_type") {
-                    const invalidTypeIssue = issue as any;
-                    if (
-                        invalidTypeIssue.expected &&
-                        invalidTypeIssue.received
-                    ) {
-                        console.error(
-                            `      Expected: ${invalidTypeIssue.expected}, received: ${invalidTypeIssue.received}`
-                        );
-                    }
-                } else if (issue.code === "too_small") {
-                    const tooSmallIssue = issue as any;
-                    if (tooSmallIssue.minimum !== undefined) {
-                        console.error(
-                            `      Minimum: ${tooSmallIssue.minimum}`
-                        );
-                    }
-                } else if (issue.code === "too_big") {
-                    const tooBigIssue = issue as any;
-                    if (tooBigIssue.maximum !== undefined) {
-                        console.error(`      Maximum: ${tooBigIssue.maximum}`);
-                    }
+            // Create user-friendly error messages
+            let message = issue.message;
+            if (issue.code === "invalid_type") {
+                const invalidTypeIssue = issue as any;
+                if (
+                    invalidTypeIssue.expected &&
+                    invalidTypeIssue.received &&
+                    type === "type"
+                ) {
+                    message = `expected ${invalidTypeIssue.expected}, got ${invalidTypeIssue.received}`;
                 }
-            });
-        }
+            } else if (issue.code === "too_small") {
+                const tooSmallIssue = issue as any;
+                if (tooSmallIssue.minimum !== undefined) {
+                    message = `minimum value: ${tooSmallIssue.minimum}`;
+                }
+            } else if (issue.code === "too_big") {
+                const tooBigIssue = issue as any;
+                if (tooBigIssue.maximum !== undefined) {
+                    message = `maximum value: ${tooBigIssue.maximum}`;
+                }
+            }
 
-        console.error(
-            "\n  💡 Tip: Check your .env.axogen file and ensure all required variables are set with correct values.\n"
+            return {
+                field,
+                message,
+                type,
+            };
+        });
+
+        pretty.validation.errorGroup(
+            "Environment variable validation failed",
+            validationErrors
         );
+
+        console.log();
+        pretty.info(
+            `Check your ${pretty.text.accent(".env.axogen")} file and ensure all required variables are set with correct values.`
+        );
+        console.log();
     }
 
     if (config.exitOnError) {
@@ -138,7 +126,7 @@ export function createTypedEnv<T extends EnvSchema>(
         const result = zodSchema.parse(process.env);
 
         if (!finalConfig.silent) {
-            console.log("✅ Environment variables validated successfully");
+            pretty.success("Environment variables validated successfully");
         }
 
         return result as ParsedEnv<T>;
@@ -149,10 +137,7 @@ export function createTypedEnv<T extends EnvSchema>(
             throw error;
         } else {
             if (!finalConfig.silent) {
-                console.error(
-                    "❌ Failed to parse environment variables:",
-                    error
-                );
+                pretty.error(`Failed to parse environment variables: ${error}`);
             }
             if (finalConfig.exitOnError) {
                 process.exit(1);

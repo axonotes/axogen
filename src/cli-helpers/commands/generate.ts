@@ -1,6 +1,7 @@
 import {Command} from "commander";
 import type {AxogenConfig} from "../../types";
 import {targetGenerator} from "../../generators";
+import {pretty} from "../../utils/pretty";
 
 export function createGenerateCommand(config: AxogenConfig): Command {
     return new Command("generate")
@@ -12,10 +13,10 @@ export function createGenerateCommand(config: AxogenConfig): Command {
             "Show what would be generated without writing files"
         )
         .action(async (options) => {
-            console.log("🚀 Generating configuration files...");
+            pretty.loading("Generating configuration files...");
 
             if (!config.targets || Object.keys(config.targets).length === 0) {
-                console.log("ℹ️  No targets defined in config");
+                pretty.info("No targets defined in config");
                 return;
             }
 
@@ -25,10 +26,11 @@ export function createGenerateCommand(config: AxogenConfig): Command {
                 : config.targets;
 
             if (options.target && !config.targets[options.target]) {
-                console.error(`❌ Target "${options.target}" not found`);
-                console.log("\nAvailable targets:");
+                pretty.error(`Target "${options.target}" not found`);
+                console.log();
+                pretty.info("Available targets:");
                 Object.keys(config.targets).forEach((name) =>
-                    console.log(`  ${name}`)
+                    pretty.format.bullet(name, 1)
                 );
                 process.exit(1);
             }
@@ -43,40 +45,16 @@ export function createGenerateCommand(config: AxogenConfig): Command {
                     }
                 );
 
-                // Report results
-                let successCount = 0;
-                let errorCount = 0;
+                pretty.generation.results(results, {dryRun: options.dryRun});
 
-                for (const result of results) {
-                    if (result.success) {
-                        successCount++;
-                        const message = options.dryRun
-                            ? `📄 Would generate: ${result.path}`
-                            : `📄 Generated: ${result.path}`;
-                        console.log(message);
-                    } else {
-                        errorCount++;
-                        console.error(
-                            `❌ Failed to generate ${result.name}: ${result.error}`
-                        );
-                    }
-                }
-
-                // Summary
-                if (errorCount === 0) {
-                    console.log(
-                        `✅ Generation complete! (${successCount} files)`
-                    );
-                } else {
-                    console.error(
-                        `⚠️  Generation completed with errors: ${successCount} success, ${errorCount} failed`
-                    );
+                // Exit with error code if any targets failed
+                const hasErrors = results.some((result) => !result.success);
+                if (hasErrors) {
                     process.exit(1);
                 }
             } catch (error) {
-                console.error(
-                    "❌ Failed to generate files:",
-                    error instanceof Error ? error.message : error
+                pretty.error(
+                    `Failed to generate files: ${error instanceof Error ? error.message : error}`
                 );
                 process.exit(1);
             }
