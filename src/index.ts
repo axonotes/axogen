@@ -60,6 +60,7 @@ export {
     group,
     exec,
     executeCommand,
+    liveExec,
 } from "./cli-helpers";
 
 // Export utilities that users might want
