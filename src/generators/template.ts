@@ -1,6 +1,6 @@
 import {readFile} from "node:fs/promises";
 import * as nunjucks from "nunjucks";
-import * as Handlebars from "handlebars";
+import Handlebars from "handlebars";
 import * as Mustache from "mustache";
 import type {TemplateTarget} from "../types";
 

@@ -1,6 +1,6 @@
 {
     "name": "@axonotes/axogen",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "description": "TypeScript-native configuration system that unifies typed environment variables, code generation, and task management for any project",
     "type": "module",
     "main": "dist/index.js",
