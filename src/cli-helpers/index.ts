@@ -4,17 +4,13 @@ export * from "./runner";
 import {spawn} from "node:child_process";
 
 /**
- * Executes a command-line command and returns the result.
- * @param command The command to execute.
- * @param options Additional options for the execution.
- * @returns A Promise that resolves with the command's output or rejects with an error.
+ * Execute a shell command and capture output
  */
 export function executeCommand(
     command: string,
     options: {
         cwd?: string;
         env?: NodeJS.ProcessEnv;
-        shell?: string;
     } = {}
 ): Promise<{stdout: string; stderr: string; exitCode: number}> {
     return new Promise((resolve, reject) => {
@@ -22,7 +18,7 @@ export function executeCommand(
             shell: true,
             cwd: options.cwd || process.cwd(),
             env: {...process.env, ...options.env},
-            stdio: ["pipe", "pipe", "pipe"], // Capture stdout and stderr
+            stdio: ["pipe", "pipe", "pipe"],
         });
 
         let stdout = "";
@@ -46,19 +42,4 @@ export function executeCommand(
     });
 }
 
-/**
- * Executes a command-line command and returns the result. (Alias for `executeCommand`)
- * @param command The command to execute.
- * @param options Additional options for the execution.
- * @returns A Promise that resolves with the command's output or rejects with an error.
- */
-export function exec(
-    command: string,
-    options: {
-        cwd?: string;
-        env?: NodeJS.ProcessEnv;
-        shell?: string;
-    } = {}
-): Promise<{stdout: string; stderr: string; exitCode: number}> {
-    return executeCommand(command, options);
-}
+export const exec = executeCommand;

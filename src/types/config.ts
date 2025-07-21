@@ -69,8 +69,6 @@ export const targetSchema = z.discriminatedUnion("type", [
     templateTargetSchema,
 ]);
 
-// NEW COMMAND SYSTEM TYPES
-
 /**
  * Global context available to all commands
  */
@@ -103,9 +101,6 @@ export interface CommandContext<
 export interface SimpleCommandContext {
     global: CommandGlobalContext;
     config: AxogenConfig;
-    // Legacy aliases for compatibility
-    cwd: string;
-    env: Record<string, string | undefined>;
 }
 
 /**

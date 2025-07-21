@@ -58,10 +58,9 @@ export {
     command,
     cmd,
     group,
-    type InferCommandContext,
     exec,
     executeCommand,
-} from "./commands";
+} from "./cli-helpers";
 
 // Export utilities that users might want
 export {loadConfig} from "./core/config";
