@@ -1,8 +1,23 @@
+---
+title: Getting Started with Axogen
+description: A quick guide to set up Axogen for your project
+sidebar_position: 2
+---
+
 # Getting Started
 
 Let's be honest - most configuration tools make you write a novel before you can
 generate a single file. Not here. You can start with just a few lines and grow
 from there.
+
+:::warning Documentation Status
+
+The docs are currently not up to date as I'm focused on stabilizing core
+features. For the most current information, you might need to check the source
+code on GitHub or the examples in this blog post. Proper documentation will come
+once the API is more stable!
+
+:::
 
 ## The Absolute Minimum
 
@@ -68,9 +83,11 @@ PORT=3000
 DATABASE_URL=postgresql://localhost:5432/myapp
 ```
 
-!!! warning "Don't commit your secrets!"
+:::warning "Don't commit your secrets!"
 
     Add `.env.axogen` to your `.gitignore` file! It's just like any other `.env` file - you don't want to push your secrets to git.
+
+:::
 
 Now when you run `axogen generate`, it validates your environment variables and
 generates the config. If `DATABASE_URL` is missing, it'll yell at you. No more

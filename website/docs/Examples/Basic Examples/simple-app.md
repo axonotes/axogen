@@ -1,5 +1,14 @@
 # Simple App Example
 
+:::warning Documentation Status
+
+The docs are currently not up to date as I'm focused on stabilizing core
+features. For the most current information, you might need to check the source
+code on GitHub or the examples in this blog post. Proper documentation will come
+once the API is more stable!
+
+:::
+
 Look, you're building a simple Node.js app. Maybe it's an Express API, maybe
 it's a CLI tool, doesn't matter. Point is, you need some basic configuration -
 database URL, port number, API keys.
@@ -49,29 +58,9 @@ simple-app/
 
 ## Step 1: Install Axogen
 
-=== "npm"
-
-    ```bash
-    npm install @axonotes/axogen
-    ```
-
-=== "yarn"
-
-    ```bash
-    yarn add @axonotes/axogen
-    ```
-
-=== "pnpm"
-
-    ```bash
-    pnpm add @axonotes/axogen
-    ```
-
-=== "bun"
-
-    ```bash
-    bun add @axonotes/axogen
-    ```
+```bash npm2yarn
+npm install @axonotes/axogen
+```
 
 ## Step 2: Create Your Config Definition
 

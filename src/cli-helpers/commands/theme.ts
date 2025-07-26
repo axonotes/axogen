@@ -238,7 +238,7 @@ export function createThemeCommand(): Command {
     // Enhanced preview command with realistic demo
     themeCmd
         .command("preview <theme>")
-        .description("Preview a theme with realistic CLI output examples")
+        .description("Preview a theme with realistic CLI output Examples")
         .action((themeName: string) => {
             if (!(themeName in themes)) {
                 pretty.error(`Invalid theme "${themeName}"`);
@@ -358,7 +358,7 @@ export function createThemeCommand(): Command {
             {key: "current", value: "Show current theme"},
             {
                 key: "preview <theme>",
-                value: "Full preview with realistic examples",
+                value: "Full preview with realistic Examples",
             },
             {key: "set <theme>", value: "Set theme for current session"},
             {

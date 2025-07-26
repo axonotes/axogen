@@ -23,5 +23,21 @@
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         "noPropertyAccessFromIndexSignature": false
-    }
+    },
+    "include": ["src/**/*"],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "build",
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "website",
+        "website/**/*",
+        "website/docs/api",
+        "website/docs/api/**/*",
+        "website/.docusaurus",
+        "website/.docusaurus/**/*",
+        "**/*.md",
+        "**/*.mdx"
+    ]
 }

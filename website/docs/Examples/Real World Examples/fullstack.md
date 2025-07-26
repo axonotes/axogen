@@ -1,5 +1,14 @@
 # Full-Stack Project Example
 
+:::warning Documentation Status
+
+The docs are currently not up to date as I'm focused on stabilizing core
+features. For the most current information, you might need to check the source
+code on GitHub or the examples in this blog post. Proper documentation will come
+once the API is more stable!
+
+:::
+
 _Frontend + Backend + Database, all in sync - because scattered config files are
 the enemy of productivity_
 
@@ -53,29 +62,9 @@ fullstack-app/
 
 ## Step 1: Install Axogen
 
-=== "npm"
-
-    ```bash
-    npm install @axonotes/axogen
-    ```
-
-=== "yarn"
-
-    ```bash
-    yarn add @axonotes/axogen
-    ```
-
-=== "pnpm"
-
-    ```bash
-    pnpm add @axonotes/axogen
-    ```
-
-=== "bun"
-
-    ```bash
-    bun add @axonotes/axogen
-    ```
+```bash npm2yarn
+bun add @axonotes/axogen
+```
 
 ## Step 2: Define Your Configuration
 

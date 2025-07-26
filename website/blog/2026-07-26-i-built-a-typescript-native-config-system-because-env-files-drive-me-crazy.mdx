@@ -1,0 +1,597 @@
+---
+slug: i-built-a-typescript-native-config-system-because-env-files-drive-me-crazy
+title:
+    I Built a TypeScript-Native Config System Because .env Files Drive Me Crazy
+authors: [oliverseifert]
+---
+
+You know that moment when you change a port number and suddenly half your
+services can't talk to each other? You spend 20 minutes debugging only to
+realize you forgot to update the WebSocket URL in three different places. Again.
+
+Yeah, I was tired of that too.
+
+I spent three days building something about it. Now I'm at v0.3.0 and already
+seeing so much potential that I had to share.
+
+<!-- truncate -->
+
+## The Problem That Actually Broke Me
+
+I was working on [AxonotesCore](https://github.com/axonotes/AxonotesCore) when I
+hit my breaking point. Here's what my actual project looks like:
+
+```
+AxonotesCore/
+├── dashboard/               # SvelteKit frontend (port 5173)
+│   └── .env                 # Most config here
+├── server/                  # Rust SpacetimeDB module
+├── SpacetimeDB/             # SpacetimeDB CLI (port 3000)
+├── scripts/                 # Key generation utilities
+└── package.json             # Many hardcoded scripts
+```
+
+My `dashboard/.env` file is a beautiful disaster of hardcoded URLs and ports:
+
+```bash
+WORKOS_REDIRECT_URI="http://localhost:5173/auth/callback"
+PUBLIC_SPACETIME_WS="ws://localhost:3000"
+# Plus a dozen other auth and JWT variables that look like keyboard mashing...
+```
+
+But the real nightmare lives in `package.json`. Look at this beauty:
+
+```json
+{
+    "scripts": {
+        "presrv:dev": "bun run sdb:build:cli",
+        "srv:publish": "./bin/spacetimedb-cli publish --project-path server -c axonotes",
+        "comment:server:dev": "ADD --auth-required to the dev command in PRODUCTION!",
+        "dash:dev": "cd dashboard && bun run dev",
+        "scr:setup:keys": "cd scripts && bun run generate-keys.ts"
+    }
+}
+```
+
+See that hardcoded `http://localhost:5173` buried in the middle of that command?
+Me neither, because it's actually way further down:
+
+```json
+{
+    "name": "axonotes-core",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "prepare": "husky",
+        "setup": "bun run scr:setup:keys && bun run dash:install",
+        "format": "prettier --write . && bun run srv:format && bun run sdb:format",
+        "format:check": "prettier --check .",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "sdb:comment": "--- SpacetimeDB Subtree Management ---",
+        "sdb:pull-upstream": "git subtree pull --prefix=SpacetimeDB https://github.com/clockworklabs/SpacetimeDB.git master --squash",
+        "sdb:push-fork": "git subtree push --prefix=SpacetimeDB https://github.com/axonotes/SpacetimeDB.git master",
+        "sdb:pull-fork": "git subtree pull --prefix=SpacetimeDB https://github.com/axonotes/SpacetimeDB.git master --squash",
+        "sdb:build:cli": "mkdir -p bin && cd SpacetimeDB && cargo build --release -p spacetimedb-cli -p spacetimedb-standalone && cp target/release/spacetimedb-cli ../bin/ && cp target/release/spacetimedb-standalone ../bin/",
+        "presdb:login": "bun run sdb:build:cli",
+        "sdb:login": "./bin/spacetimedb-cli login",
+        "presdb:logout": "bun run sdb:build:cli",
+        "sdb:logout": "./bin/spacetimedb-cli logout",
+        "sdb:format": "cd SpacetimeDB && cargo fmt --all",
+        "comment:server": "--- SpacetimeDB Server ---",
+        "presrv:dev": "bun run sdb:build:cli",
+        "srv:publish": "./bin/spacetimedb-cli publish --project-path server -c axonotes && ./bin/spacetimedb-cli generate --lang typescript --out-dir dashboard/src/lib/module_bindings --project-path server",
+        "comment:server:dev": "ADD --auth-required to the dev command in PRODUCTION!",
+        "srv:dev": "./bin/spacetimedb-cli start --in-memory --allowed-oidc-issuer http://localhost:5173 --allowed-oidc-issuer https://auth.spacetimedb.com",
+        "srv:format": "cd server && cargo fmt --all",
+        "presrv:clear": "bun run sdb:build:cli",
+        "srv:clear": "./bin/spacetimedb-cli server clear",
+        "srv:logs": "./bin/spacetimedb-cli logs axonotes",
+        "comment:dashboard": "--- SvelteKit Dashboard ---",
+        "dash:install": "cd dashboard && bun install",
+        "dash:dev": "cd dashboard && bun run dev",
+        "dash:build": "cd dashboard && bun run build",
+        "dash:preview": "cd dashboard && bun run preview",
+        "comment:scripts": "--- Utility Scripts ---",
+        "prescr:setup:keys": "cd scripts && bun install",
+        "scr:setup:keys": "cd scripts && bun run generate-keys.ts"
+    }
+}
+```
+
+There it is! Hiding in the `srv:dev` command like a bug in production code.
+Every time I change the dashboard port, I have to hunt through scripts, update
+the WORKOS callback URL, and remember which comments are actual warnings versus
+just... despair.
+
+We needed a separate markdown file explaining how to run anything. New
+developers would look at this and just give up.
+
+I thought "there's gotta be a tool for this, right?"
+
+## Turns Out, Not Really
+
+Here's the thing: we're stuck in this weird middle ground. **dotenv** (58
+million weekly downloads) gives you basically nothing - no validation,
+everything's a string, zero sync capabilities. **Enterprise stuff** like
+HashiCorp Vault requires a dedicated DevOps team and costs more than my coffee
+budget.
+
+**Everything else** makes you learn new languages (looking at you, Jsonnet) or
+locks you into cloud providers.
+
+I needed something that felt like TypeScript, worked with normal web
+development, and actually solved the URL synchronization nightmare. So I built
+it.
+
+## Meet Axogen: Starting Simple, Getting Powerful
+
+The core idea is dead simple: define your configuration once in TypeScript,
+generate multiple formats automatically. But here's the kicker - it's powered by
+**Zod** under the hood, which means you get real schema validation, not just
+"hope this string is actually a number."
+
+Let me show you:
+
+```typescript
+// axogen.config.ts
+import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+
+const env = createTypedEnv({
+    SPACETIME_PORT: z.coerce.number().default(3000),
+    DASHBOARD_PORT: z.coerce.number().default(5173),
+    WORKOS_CLIENT_ID: z.string().min(1, "WorkOS Client ID is required"),
+    DATABASE_URL: z.url("Must be a valid database URL"),
+    JWT_PRIVATE_KEY_BASE64: z.string().base64("Invalid base64 encoding"),
+    NODE_ENV: z
+        .enum(["development", "staging", "production"])
+        .default("development"),
+});
+
+export default defineConfig({
+    targets: {
+        dashboard: {
+            path: "dashboard/.env",
+            type: "env",
+            variables: {
+                WORKOS_CLIENT_ID: env.WORKOS_CLIENT_ID,
+                WORKOS_REDIRECT_URI: `http://localhost:${env.DASHBOARD_PORT}/auth/callback`,
+                PUBLIC_SPACETIME_WS: `ws://localhost:${env.SPACETIME_PORT}`,
+                DATABASE_URL: env.DATABASE_URL,
+                JWT_PRIVATE_KEY_BASE64: env.JWT_PRIVATE_KEY_BASE64,
+            },
+        },
+    },
+});
+```
+
+Put your actual values in `.env.axogen`:
+
+```bash
+PACETIME_PORT=3000
+DASHBOARD_PORT=5173
+WORKOS_CLIENT_ID=your_client_id
+DATABASE_URL=postgresql://localhost:5432/axonotes
+JWT_PRIVATE_KEY_BASE64=eW91cl9wcml2YXRlX2tleQ==
+NODE_ENV=development
+```
+
+Run `axogen generate` and it creates `dashboard/.env` with all the URLs
+automatically calculated. Change `DASHBOARD_PORT` to 3000, regenerate, and the
+auth callback becomes `http://localhost:3000/auth/callback` automatically.
+
+One source of truth. Everything else just follows.
+
+## And Yeah, It's Actually Fast
+
+I haven't even optimized this yet, but somehow it's just... fast. Like, really
+fast:
+
+```
+✅ Stress test completed in 2191ms
+📊 Generated 10000 configuration files
+📈 Average time per target: 0.22ms
+```
+
+That's 10,000 config files in 2.2 seconds. For comparison, most tools take
+longer than that just to parse your package.json.
+
+It turns out when you're basically just validating once and converting JSON to
+different formats, things can be pretty snappy. Who knew? This means you can run
+`axogen generate` constantly during development without thinking about it -
+change a port, regenerate, keep coding.
+
+## Zod-Powered Type Safety
+
+This isn't just string replacement. Remember, we're using **Zod** schemas for
+validation. Try this:
+
+```bash
+# In .env.axogen
+DATABASE_URL=not-a-url
+JWT_PRIVATE_KEY_BASE64=definitely_not_base64!
+SPACETIME_PORT=not_a_number
+```
+
+Run `axogen generate` and watch it fail fast with beautiful, colored output
+(well, here its just black/white):
+
+```
+❌ Environment variable validation failed
+
+  Missing Required:
+    • SPACETIME_PORT
+
+  Validation Errors:
+    • DATABASE_URL: Must be a valid database URL
+    • JWT_PRIVATE_KEY_BASE64: Invalid base64 encoding
+
+ℹ️  Check your .env.axogen file and ensure all required variables are set with correct values.
+```
+
+No more silent failures. No more wondering if that PORT should be `3000` or
+`"3000"`. No more invalid URLs making it to production. The config gets
+validated using Zod's full power before anything gets generated.
+
+Want custom validation? Just use any Zod method:
+
+```typescript
+const env = createTypedEnv({
+    API_RATE_LIMIT: z.coerce.number().min(1).max(1000),
+    WEBHOOK_SECRET: z
+        .string()
+        .min(32, "Webhook secret must be at least 32 characters"),
+    ALLOWED_ORIGINS: z
+        .string()
+        .transform((s) => s.split(","))
+        .pipe(z.array(z.url())),
+});
+```
+
+It's like having TypeScript for your environment variables. Well, it literally
+is TypeScript for your environment variables.
+
+## Fixing the Scripts Nightmare (Now With Style)
+
+Here's where Axogen v0.3.0 gets really powerful. Remember that package.json
+disaster? You can start simple:
+
+```typescript
+export default defineConfig({
+    // ... targets
+    commands: {
+        "dev:spacetime": `./bin/spacetimedb-cli start --in-memory --allowed-oidc-issuer http://localhost:${env.DASHBOARD_PORT}`,
+        "dev:dashboard": `cd dashboard && bun run dev --port ${env.DASHBOARD_PORT}`,
+    },
+});
+```
+
+That's it. Just strings that reference your config variables. But then you
+realize - wait, I want help messages! And maybe some custom logic. So you can
+upgrade to the full power:
+
+```typescript
+export default defineConfig({
+    commands: {
+        "dev:spacetime": command.define({
+            help: "Start SpacetimeDB server in development mode",
+            exec: async () => {
+                console.log("🚀 Starting SpacetimeDB server...");
+                const result = await liveExec(
+                    `./bin/spacetimedb-cli start --in-memory --allowed-oidc-issuer http://localhost:${env.DASHBOARD_PORT}`,
+                    {outputPrefix: "SDB"}
+                );
+            },
+        }),
+
+        "dev:all": command.string(
+            "concurrently 'axogen run dev:spacetime' 'axogen run dev:dashboard'",
+            "Start all development servers"
+        ),
+    },
+});
+```
+
+Now when you run `axogen run --help`, you get a proper command list with
+descriptions. And `axogen run dev:spacetime --help` shows you exactly what it
+does. The commands automatically use the right ports, and the output actually
+shows you what's happening:
+
+```
+❯ axogen run srv:dev
+❯ axogen run dev:spacetime
+✅ Environment variables validated successfully
+🚀 Starting SpacetimeDB server...
+🚀 Running: ./bin/spacetimedb-cli start --in-memory --allowed-oidc-issuer http://localhost:5173
+
+[SDB] spacetimedb-standalone version: 1.2.0
+[SDB] spacetimedb-standalone path: /home/user/AxonotesCore/bin/spacetimedb-standalone
+[SDB] database running in data directory /home/imgajeed/.local/share/spacetime/data
+[SDB] warning: some trace filter directives would enable traces that are disabled statically
+[SDB]  | `spacetimedb=debug` would enable the DEBUG level for the `spacetimedb` target
+[SDB]  | `spacetimedb_client_api=debug` would enable the DEBUG level for the `spacetimedb_client_api` target
+[SDB]  | `spacetimedb_lib=debug` would enable the DEBUG level for the `spacetimedb_lib` target
+[SDB]  | `spacetimedb_standalone=debug` would enable the DEBUG level for the `spacetimedb_standalone` target
+[SDB]  | `spacetimedb_commitlog=info` would enable the INFO level for the `spacetimedb_commitlog` target
+[SDB]  | `spacetimedb_durability=info` would enable the INFO level for the `spacetimedb_durability` target
+[SDB]  | `axum::rejection=trace` would enable the TRACE level for the `axum::rejection` target
+[SDB]  = note: the static max level is `off`
+[SDB]  = help: to enable logging, remove the `max_level_off` feature from the `tracing` crate
+[SDB] 2025-07-21T18:42:45.127087Z DEBUG /home/user/AxonotesCore/SpacetimeDB/crates/standalone/src/subcommands/start.rs:186: Starting SpacetimeDB listening on 0.0.0.0:3000
+```
+
+## Commands That Are Actually Intelligent
+
+Because this is TypeScript, your commands can be smart. They can read your
+config, validate options, make decisions, and even handle complex workflows:
+
+```typescript
+commands: {
+    setup: command.define({
+        help: "Initialize the project with key generation",
+        exec: async (ctx) => {
+            if (!env.JWT_PRIVATE_KEY_BASE64) {
+                console.log("🔑 Generating JWT keys...");
+                // Generate and save keys automatically
+                console.log("✅ Keys generated! Update your .env.axogen");
+            } else {
+                console.log("✅ Keys already exist");
+            }
+        },
+    }),
+
+    deploy: command.define({
+        help: "Deploy the application",
+        options: {
+            environment: z.enum(["staging", "production"]).default("staging"),
+            skipTests: z.boolean().default(false),
+        },
+        exec: async (ctx) => {
+            if (ctx.options.environment === "production" && !ctx.options.skipTests) {
+                console.log("🧪 Running tests before production deploy...");
+                // Run tests with live output
+            }
+
+            console.log(`🚀 Deploying to ${ctx.options.environment}...`);
+            // Smart deployment logic based on environment
+        },
+    }),
+}
+```
+
+Run with typed, validated options:
+
+```bash
+axogen run deploy --environment production --skipTests
+```
+
+Your commands get full IntelliSense, runtime validation, and proper error
+messages if you pass invalid options. It's programmable infrastructure, not just
+string replacement.
+
+## The Console Themes That Make Everything Beautiful
+
+Here's something I'm particularly proud of in v0.3.0 - console themes. Because
+why should your configuration tool look boring?
+
+```bash
+# Try different themes
+axogen run dev:all --theme aura          # Vibrant neon colors
+axogen run dev:all --theme catppuccin    # Soothing pastels
+axogen run dev:all --theme doom-one      # Classic sophisticated
+axogen run dev:all --theme astrodark     # Default balanced theme
+```
+
+Each theme is carefully crafted with semantic colors - success is always green,
+errors are red, but the exact shades and the way they work together creates
+completely different vibes. It's like having VS Code themes for your terminal
+output.
+
+The themes aren't just pretty - they're functional. Different command types get
+different colors, so you can instantly tell if something is a file operation
+(cyan), command execution (orange), or debug info (blue).
+
+## When I Add Docker, Kubernetes, Whatever (It Just Works)
+
+Right now, AxonotesCore has three services and it's fully migrated to Axogen.
+But here's where it gets really cool - Axogen can generate _any_ format using
+templates. When I add Docker Compose:
+
+```typescript
+export default defineConfig({
+    targets: {
+        docker: {
+            path: "docker-compose.yml",
+            type: "template",
+            template: "docker-compose.yml.njk",
+            variables: env,
+        },
+    },
+});
+```
+
+My `docker-compose.yml.njk` template:
+
+```yaml
+version: '3.8'
+services:
+  spacetimedb:
+    build: ./SpacetimeDB
+    ports:
+      - "{{ SPACETIME_PORT }}:3000"
+    environment:
+      ALLOWED_ORIGINS: "http://dashboard:{{ DASHBOARD_PORT }}"
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "{{ DASHBOARD_PORT }}:5173"
+    environment:
+      PUBLIC_SPACETIME_WS: "ws://spacetimedb:3000"
+      {% if NODE_ENV == "production" %}
+      WORKOS_REDIRECT_URI: "https://app.axonotes.com/auth/callback"
+      {% else %}
+      WORKOS_REDIRECT_URI: "http://localhost:{{ DASHBOARD_PORT }}/auth/callback"
+      {% endif %}
+```
+
+This generates different configs for different environments. Want Kubernetes
+manifests? Terraform files? Nginx configs? Just add more templates. One
+TypeScript config, infinite outputs.
+
+## The Full Power: Real Production Config
+
+Want to see what this looks like in a real production application? Here's a
+glimpse of AxonotesCore's actual config (simplified for readability):
+
+```typescript
+const env = createTypedEnv({
+    AXONOTES_ENV: z.enum(["local", "staging", "production"]).default("local"),
+    WORKOS_CLIENT_ID: z.string(),
+    WORKOS_API_KEY: z.string(),
+    JWT_PRIVATE_KEY_BASE64: z.string().base64(),
+    JWT_PUBLIC_KEY_BASE64: z.string().base64(),
+});
+
+const getConfig = () => {
+    switch (env.AXONOTES_ENV) {
+        case "local":
+            return {
+                dashboardOrigin: "http://localhost:5173",
+                spacetimeEndpoint: "ws://localhost:3000",
+            };
+        case "staging":
+            return {
+                dashboardOrigin: "https://staging.axonotes.com",
+                spacetimeEndpoint: "wss://staging-api.axonotes.com",
+            };
+        case "production":
+            return {
+                dashboardOrigin: "https://axonotes.com",
+                spacetimeEndpoint: "wss://api.axonotes.com",
+            };
+    }
+};
+
+export default defineConfig({
+    targets: {
+        dashboard: {
+            path: "dashboard/.env",
+            type: "env",
+            variables: {
+                WORKOS_REDIRECT_URI: `${config.dashboardOrigin}/auth/callback`,
+                PUBLIC_SPACETIME_WS: config.spacetimeEndpoint,
+                JWT_ISSUER: config.dashboardOrigin,
+                // 20+ more variables, all automatically calculated
+            },
+        },
+    },
+    commands: {
+        "srv:dev": command.define({
+            help: "Start SpacetimeDB server with environment-specific settings",
+            exec: async () => {
+                const authFlag =
+                    env.AXONOTES_ENV === "production" ? "--auth-required" : "";
+                await liveExec(
+                    `./bin/spacetimedb-cli start --in-memory ${authFlag} --allowed-oidc-issuer ${config.dashboardOrigin}`,
+                    {outputPrefix: "SDB"}
+                );
+            },
+        }),
+        // 15+ more commands, all environment-aware
+    },
+});
+```
+
+One environment variable change (`AXONOTES_ENV=production`) and the entire
+configuration shifts - different URLs, different auth settings, different
+security flags. Everything updates automatically.
+
+## Why I'm Building This (Despite Being Super Early)
+
+Look, I built this in three days total. We're at v0.3.0. The API will probably
+change. But I had to share because the problem is _everywhere_.
+
+We're stuck between **dotenv** (does basically nothing) and enterprise tools
+requiring dedicated DevOps teams. Research actually shows that 28% of outages
+are caused by "someone making a change to the environment"
+https://newrelic.com/resources/report/observability-forecast/2024/state-of-observability/outages-downtime
+and the Uptime Institute found that 66-80% of outages involve human error
+https://journal.uptimeinstitute.com/how-to-avoid-outages-try-harder/ (including
+configuration issues).
+
+**TypeScript developers** love type safety but give it up for configuration.
+**Teams** onboard new developers with .env.example files that drift out of sync.
+**Full-stack projects** manually coordinate URLs across services. **DevOps**
+gets called for every environment variable change.
+
+There's this huge gap where most development teams live. Axogen sits right
+there: familiar TypeScript, real type safety, automatic synchronization, and
+commands that actually look good when they run - but simple enough that you
+don't need a platform team.
+
+**It already works**. I've migrated AxonotesCore completely to Axogen.
+
+## Try It Yourself
+
+```bash
+# Install axogen (npm, bun, yarn, etc.)
+npm install @axonotes/axogen
+
+# Create a minimal config using echo
+echo 'import {defineConfig, createTypedEnv, z} from "@axonotes/axogen";
+const env = createTypedEnv({
+    NODE_ENV: z.string().default("development"),
+    PORT: z.coerce.number().default(3000),
+    DATABASE_URL: z.url(),
+});
+export default defineConfig({
+    targets: {
+        app: {
+            path: ".env",
+            type: "env",
+            variables: {
+                NODE_ENV: env.NODE_ENV,
+                PORT: env.PORT,
+                DATABASE_URL: env.DATABASE_URL,
+            },
+        },
+    },
+});' > axogen.config.ts
+
+# Create a matching .env.axogen file using echo
+echo 'NODE_ENV=development
+PORT=3000
+DATABASE_URL=https://your.database.url' > .env.axogen
+
+# Generate your config with validation
+axogen generate
+```
+
+Check out the [docs](https://axonotes.github.io/axogen/) for more examples, or
+the [GitHub repo](https://github.com/axonotes/axogen) to see how it works.
+
+## The Bigger Picture
+
+Configuration should be boring. It should just work. You shouldn't choose
+between too simple (dotenv) or too complex (enterprise config management). You
+shouldn't give up type safety the moment you touch environment variables.
+
+You should define your config once, in a language you already know, with the
+full power of TypeScript and Zod. Your commands should run with proper output
+and themes that make you actually enjoy working with your infrastructure. That's
+what Axogen is trying to be.
+
+Give it a try, let me know what breaks, and tell me what you'd actually use this
+for. I'm [@imgajeed76](https://github.com/imgajeed76) on GitHub if you want to
+complain about bugs or suggest features.
+
+Or just star the repo if you think this is a problem worth solving. Building dev
+tools is way more fun when people might actually use them.
+
+---
+
+_Built with ❤️ and mild frustration by
+[Oliver Seifert](https://github.com/imgajeed76). Currently v0.3.0, proceed with
+reasonable caution._

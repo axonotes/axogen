@@ -1,10 +1,29 @@
-# Axogen
+---
+title: Introduction
+description:
+    TypeScript-native configuration system for any project, any language
+sidebar_position: 1
+---
+
+# Introduction
 
 TypeScript-native configuration system for **any project, any language**.
 
-!!! warning "Early Development - v0.2.0"
+:::warning Early Development - v0.3.x
 
-    This is very early development. The API will change as I work on improving the developer experience. Fair warning!
+This is early development. The API may change as we work on improving the
+developer experience.
+
+:::
+
+:::warning Documentation Status
+
+The docs are currently not up to date as I'm focused on stabilizing core
+features. For the most current information, you might need to check the source
+code on GitHub or the examples in this blog post. Proper documentation will come
+once the API is more stable!
+
+:::
 
 ## What is Axogen?
 
@@ -47,6 +66,9 @@ export default defineConfig({
             },
         },
     },
+    commands: {
+        start: `npm start --port ${env.PORT}`,
+    },
 });
 ```
 
@@ -80,64 +102,41 @@ project/
 └── app.json                    # API URLs again
 ```
 
-This happens in **every language and framework**:
+This happens in **every language and framework**. Change one value, update 5+
+files. This is not only tedious but error-prone.
 
-- Python projects with `.env` + `config.yaml` + Docker configs
-- Go apps with JSON configs + environment variables + Kubernetes manifests
-- Java projects with `application.properties` + Docker + deployment configs
-- Any microservice architecture with scattered config files
+Axogen solves this by allowing you to define your configuration in one place
+using TypeScript, with type-safe environment variables and runtime validation.
 
-Change one value, update 5+ files. This is not only tedious but error-prone. You
-end up with inconsistent configurations across your project that can lead to
-runtime errors. Axogen solves this by allowing you to define your configuration
-in one place using TypeScript, with type-safe environment variables and runtime
-validation.
+## Key Features
 
-## Features
-
-- **Type-safe environment variables** with runtime validation
+- **Type-safe environment variables** with runtime validation using Zod
 - **Multiple output formats** - `.env`, JSON, YAML, TOML, templates
-- **Custom commands** for common tasks
+- **Intelligent command system** with help, validation, and custom logic
+- **Console themes** for beautiful terminal output
 - **Template engine support** (Nunjucks, Handlebars, Mustache)
 - **Language-agnostic** - Works with Python, Go, Rust, Java, PHP, etc.
-- **Watch mode** for development
+- **Blazing fast** - 10,000 config files in 2.2 seconds (I know that no one has
+  that many, but still)
 
 ## Installation
 
-=== "npm"
+```bash npm2yarn
+npm install @axonotes/axogen
+```
 
-    ```bash
-    npm install @axonotes/axogen
-    ```
-
-=== "yarn"
-
-    ```bash
-    yarn add @axonotes/axogen
-    ```
-
-=== "pnpm"
-
-    ```bash
-    pnpm add @axonotes/axogen
-    ```
-
-=== "bun"
-
-    ```bash
-    bun add @axonotes/axogen
-    ```
-
-## Basic Usage
-
-Create `axogen.config.ts`:
+## Quick Example
 
 ```typescript
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+// axogen.config.ts
+import {z, defineConfig, createTypedEnv, command} from "@axonotes/axogen";
 
 const env = createTypedEnv({
-    DATABASE_URL: z.url(),
+    DATABASE_URL: z.url("Must be a valid database URL"),
     PORT: z.coerce.number().default(3000),
+    NODE_ENV: z
+        .enum(["development", "staging", "production"])
+        .default("development"),
 });
 
 export default defineConfig({
@@ -152,46 +151,40 @@ export default defineConfig({
         },
     },
     commands: {
-        start: "npm start",
+        dev: command.define({
+            help: "Start development server",
+            exec: async () => {
+                console.log(`🚀 Starting server on port ${env.PORT}`);
+                // Your custom logic here
+            },
+        }),
     },
 });
 ```
 
-Set your environment variables in `.env.axogen`:
-
 ```bash
+# .env.axogen
 DATABASE_URL=postgresql://localhost:5432/myapp
+PORT=3000
 ```
-
-Generate configs:
 
 ```bash
-axogen generate
+axogen generate    # Generate all config files
+axogen run dev     # Run commands with validation
 ```
 
-Run commands (defined in `commands`):
+When validation fails, you get clear error messages:
 
-```bash
-axogen run start
+```
+❌ Environment variable validation failed
+
+  Validation Errors:
+    • DATABASE_URL: Must be a valid database URL
+    • PORT: Expected number, received string
+
+ℹ️  Check your .env.axogen file and ensure all required variables are set.
 ```
 
-## Background
+## What's Next?
 
-I built this while working on
-[AxonotesCore](https://github.com/axonotes/AxonotesCore). Keeping different
-configs in sync was driving me crazy, so I made a tool to solve it.
-
-I'm honestly surprised there isn't something like this already. If you know of a
-similar tool, let me know!
-
-## Roadmap
-
-What I'm working on next:
-
-1. Better commands syntax and type safety
-2. Code quality improvements and tests
-3. TypeScript/JavaScript file generation
-4. Type exports for other languages (Go, Rust, etc.)
-5. More output formats for common project setups
-
-[Get Started →](installation.md)
+Check out the [Installation](./installation) guide to get started.
