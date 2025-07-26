@@ -226,7 +226,7 @@ This is just the beginning. You can:
 But for now, you've got type-safe environment variables and you'll never
 accidentally deploy with the wrong config again.
 
-Check out the [Multi-Format Example](../multi-format/) to see how to generate
+Check out the [Multi-Format Example](multi-format.md) to see how to generate
 different file types from the same source data.
 
 ## Common Variations
