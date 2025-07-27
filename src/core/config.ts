@@ -5,6 +5,7 @@ import {type AxogenConfig, type ConfigInput, normalizeConfig} from "../types";
 import {axogenConfigSchema} from "../types";
 import {createJiti} from "jiti";
 import {pretty} from "../utils/pretty";
+import {zodIssuesToErrors} from "../utils/helpers.ts";
 
 export class ConfigLoader {
     /** Load configuration from a file */
@@ -31,27 +32,7 @@ export class ConfigLoader {
             return axogenConfigSchema.parse(config);
         } catch (error) {
             if (error instanceof z.ZodError) {
-                const validationErrors = error.issues.map((issue) => {
-                    const field =
-                        issue.path.length > 0 ? issue.path.join(".") : "root";
-
-                    // Determine error type
-                    let type: "missing" | "invalid" | "type" = "invalid";
-                    if (
-                        issue.code === "invalid_type" &&
-                        issue.input === undefined
-                    ) {
-                        type = "missing";
-                    } else if (issue.code === "invalid_type") {
-                        type = "type";
-                    }
-
-                    return {
-                        field,
-                        message: issue.message,
-                        type,
-                    };
-                });
+                const validationErrors = zodIssuesToErrors(error.issues);
 
                 pretty.validation.errorGroup(
                     `Configuration validation failed in ${pretty.text.accent(resolvedPath)}`,

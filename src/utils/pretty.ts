@@ -3,6 +3,7 @@
 import ansis from "ansis";
 import {getTheme, type ThemeName, themes, listThemes} from "./themes";
 import type {SecretsAnalysisResult} from "./secrets.ts";
+import type {ZodIssueError} from "./helpers.ts";
 
 /**
  * Log levels for controlling output verbosity
@@ -334,14 +335,7 @@ export const pretty = {
         /**
          * Show a group of validation errors with proper spacing
          */
-        errorGroup: (
-            title: string,
-            errors: Array<{
-                field?: string;
-                message: string;
-                type?: "missing" | "invalid" | "type";
-            }>
-        ): void => {
+        errorGroup: (title: string, errors: ZodIssueError[]): void => {
             if (!shouldLog(LogLevel.ERROR)) return;
 
             pretty.error(title);

@@ -3,6 +3,7 @@ import type {EnvSchema, ParsedEnv, EnvConfig} from "../types";
 import {config} from "dotenv";
 import {pretty} from "../utils/pretty";
 import {isGitIgnored} from "../git/ignore-checker.ts";
+import {zodIssuesToErrors} from "../utils/helpers.ts";
 
 config({
     path: ".env.axogen",
@@ -26,46 +27,7 @@ function handleValidationError(
     config: Required<EnvConfig>
 ): void {
     if (!config.silent) {
-        const validationErrors = error.issues.map((issue) => {
-            const field = issue.path.join(".");
-
-            // Determine error type based on Zod error codes
-            let type: "missing" | "invalid" | "type" = "invalid";
-            if (issue.code === "invalid_type" && issue.input === undefined) {
-                type = "missing";
-            } else if (issue.code === "invalid_type") {
-                type = "type";
-            }
-
-            // Create user-friendly error messages
-            let message = issue.message;
-            if (issue.code === "invalid_type") {
-                const invalidTypeIssue = issue as any;
-                if (
-                    invalidTypeIssue.expected &&
-                    invalidTypeIssue.received &&
-                    type === "type"
-                ) {
-                    message = `expected ${invalidTypeIssue.expected}, got ${invalidTypeIssue.received}`;
-                }
-            } else if (issue.code === "too_small") {
-                const tooSmallIssue = issue as any;
-                if (tooSmallIssue.minimum !== undefined) {
-                    message = `minimum value: ${tooSmallIssue.minimum}`;
-                }
-            } else if (issue.code === "too_big") {
-                const tooBigIssue = issue as any;
-                if (tooBigIssue.maximum !== undefined) {
-                    message = `maximum value: ${tooBigIssue.maximum}`;
-                }
-            }
-
-            return {
-                field,
-                message,
-                type,
-            };
-        });
+        const validationErrors = zodIssuesToErrors(error.issues);
 
         pretty.validation.errorGroup(
             "Environment variable validation failed",

@@ -8,6 +8,7 @@ import type {
 } from "../types";
 import {commandRunner} from "./runner";
 import {pretty} from "../utils/pretty";
+import {zodIssuesToErrors} from "../utils/helpers.ts";
 
 export function buildDynamicCommands(cli: Command, config: AxogenConfig): void {
     if (!config.commands) return;
@@ -83,26 +84,7 @@ function buildSchemaCommand(
             });
         } catch (error) {
             if (error instanceof z.ZodError) {
-                const validationErrors = error.issues.map((issue) => {
-                    const field = issue.path.join(".");
-
-                    // Determine error type
-                    let type: "missing" | "invalid" | "type" = "invalid";
-                    if (
-                        issue.code === "invalid_type" &&
-                        issue.input === undefined
-                    ) {
-                        type = "missing";
-                    } else if (issue.code === "invalid_type") {
-                        type = "type";
-                    }
-
-                    return {
-                        field,
-                        message: issue.message,
-                        type,
-                    };
-                });
+                const validationErrors = zodIssuesToErrors(error.issues);
 
                 pretty.validation.errorGroup(
                     "Command validation failed",
