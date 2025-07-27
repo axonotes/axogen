@@ -1,5 +1,16 @@
 # Enhanced Axogen Specifications
 
+:::warning Disclaimer
+
+The specifications below are currently in draft form and may not reflect the
+final implementation. They are intended to provide a high-level overview of the
+Axogen configuration system and its current or future capabilities. The API and
+features are subject to change as we continue to develop and refine the system.
+Please refer to the source code on GitHub for the most up-to-date information
+and examples.
+
+:::
+
 Axogen supports a variety of configuration formats to suit different project
 needs and developer skill levels. Below are the specifications for each format,
 designed with progressive complexity and excellent developer experience.
@@ -26,6 +37,128 @@ This automatically:
 - Creates a sensible default config
 - Sets up common environment variables
 - Generates initial `.env.axogen` with placeholders
+
+## Security and Safety Features
+
+### Automatic Secret Detection and Git Safety
+
+Axogen automatically protects you from accidentally committing secrets to
+version control. During generation, Axogen will:
+
+1. **Detect sensitive data** in target variables (environment variables,
+   secrets, API keys, tokens, passwords)
+2. **Check .gitignore** to ensure files containing sensitive data are properly
+   excluded
+3. **Error with helpful guidance** if sensitive files aren't in .gitignore
+4. **Require explicit acknowledgment** via `unsafe()` wrapper for intentional
+   overrides
+
+#### Example: Safe Configuration
+
+```typescript
+import {defineConfig, loadSecrets, unsafe} from "@axonotes/axogen";
+
+const secrets = loadSecrets({
+    provider: "doppler",
+    project: "myapp",
+    environment: "production",
+});
+
+export default defineConfig({
+    targets: {
+        // ✅ Safe - .env is in .gitignore
+        app: {
+            path: ".env", // Must be in .gitignore
+            type: "env",
+            variables: {
+                DATABASE_URL: secrets.DATABASE_URL,
+                API_KEY: secrets.API_KEY,
+            },
+        },
+
+        // ❌ Unsafe - would error without unsafe() wrapper
+        config: {
+            path: "public/config.json", // Not in .gitignore!
+            type: "json",
+            variables: {
+                PUBLIC_API_URL: "https://api.example.com",
+                // This would cause an error:
+                // API_SECRET: secrets.API_SECRET,
+
+                // This acknowledges the risk:
+                API_SECRET: unsafe(
+                    secrets.API_SECRET,
+                    "Used in demo - will be replaced"
+                ),
+            },
+        },
+
+        // ✅ Safe - no sensitive data detected
+        docker: {
+            path: "docker-compose.yml",
+            type: "template",
+            template: "docker-compose.yml.njk",
+            variables: {
+                NODE_ENV: "production",
+                PORT: 3000,
+            },
+        },
+    },
+});
+```
+
+#### Error Messages
+
+When Axogen detects unsafe configurations, it provides clear, actionable error
+messages:
+
+```bash
+❌ Security Error: Sensitive data detected in unprotected file
+
+Target: config (public/config.json)
+Issue: File contains sensitive variables but is not in .gitignore
+
+Sensitive variables detected:
+  • API_SECRET (secret/credential)
+  • DATABASE_URL (connection string with credentials)
+
+Solutions:
+1. Add 'public/config.json' to your .gitignore
+2. Use unsafe() wrapper to acknowledge the risk:
+   API_SECRET: unsafe(secrets.API_SECRET, "reason for override")
+
+Learn more: https://docs.axogen.dev/security
+```
+
+#### The unsafe() Wrapper
+
+The `unsafe()` wrapper requires explicit acknowledgment when you intentionally
+want to include sensitive data in non-gitignored files:
+
+```typescript
+import {unsafe} from "@axonotes/axogen";
+
+// Syntax: unsafe(value, reason)
+export default defineConfig({
+    targets: {
+        demo: {
+            path: "demo/config.json", // Not in .gitignore
+            type: "json",
+            variables: {
+                // Must provide a reason for the override
+                API_KEY: unsafe(
+                    secrets.API_KEY,
+                    "Demo environment - uses fake key"
+                ),
+                DATABASE_URL: unsafe(
+                    "postgres://demo:demo@localhost/demo",
+                    "Demo database - no real data"
+                ),
+            },
+        },
+    },
+});
+```
 
 ## Variant 1: Zero Config (Magic Mode)
 
@@ -332,6 +465,66 @@ export default defineConfig({
 });
 ```
 
+## Variant 8: Secrets Management Integration
+
+Axogen integrates with leading secrets management platforms for secure
+credential handling:
+
+```typescript
+import {defineConfig, loadSecrets, loadEnv} from "@axonotes/axogen";
+
+// Phase 1: Essential Secrets Managers
+const secrets = loadSecrets({
+    // Developer-first platform with excellent DX
+    provider: "doppler",
+    project: "myapp",
+    environment: "production",
+});
+
+// Or HashiCorp Vault for self-hosted
+const vaultSecrets = loadSecrets({
+    provider: "vault",
+    url: "https://vault.company.com",
+    path: "secret/myapp",
+});
+
+// Or AWS Secrets Manager for AWS environments
+const awsSecrets = loadSecrets({
+    provider: "aws-secrets-manager",
+    secretName: "myapp/production",
+    region: "us-east-1",
+});
+
+// Phase 2: High-Value Additions
+const infisicalSecrets = loadSecrets({
+    provider: "infisical", // Open-source with great DX
+    project: "myapp",
+    environment: "prod",
+});
+
+const onePasswordSecrets = loadSecrets({
+    provider: "1password",
+    vault: "Development",
+    account: "team.1password.com",
+});
+
+export default defineConfig({
+    targets: {
+        app: {
+            path: ".env",
+            type: "env",
+            variables: {
+                // Mix environment variables and secrets
+                PORT: loadEnv().PORT,
+                DATABASE_URL: secrets.DATABASE_URL,
+                API_KEY: secrets.API_KEY,
+                JWT_SECRET: vaultSecrets.JWT_SECRET,
+            },
+        },
+    },
+});
+```
+
 ## DX Enhancements and Advanced Features
 
 ### 1. Smart Configuration Inheritance
@@ -393,58 +586,54 @@ The preview mode shows:
 - Validation status
 - Variable dependencies graph
 
-### 4. Secrets Management Integration
-
-```typescript
-import {defineConfig, loadSecrets} from "@axonotes/axogen";
-
-// Integrate with secret stores
-const secrets = loadSecrets({
-    provider: "aws-secrets-manager", // or "vault", "azure-keyvault", "gcp-secret-manager"
-    secretName: "myapp/production",
-    region: "us-east-1",
-});
-```
-
 ## Supported File Formats
 
-Sorted by popularity and common usage in modern development:
+Based on comprehensive developer usage research, Axogen supports formats in
+order of popularity and adoption:
 
-| Format          | Extensions              | Usage            | Notes                                            |
-| --------------- | ----------------------- | ---------------- | ------------------------------------------------ |
-| **Environment** | `.env`                  | **Universal**    | Used in virtually every modern project           |
-| **JSON**        | `.json`                 | **Universal**    | Standard data format, package.json, etc.         |
-| **YAML**        | `.yaml`, `.yml`         | **Very High**    | Docker Compose, Kubernetes, CI/CD configs        |
-| **JavaScript**  | `.js`                   | **High**         | Config files, build tools (webpack, vite, etc.)  |
-| **TypeScript**  | `.ts`                   | **High**         | Type-safe config files, modern tooling           |
-| **TOML**        | `.toml`                 | **Growing**      | Rust ecosystem, Python pyproject.toml            |
-| **JSONC**       | `.jsonc`                | **Medium**       | VS Code settings, tsconfig with comments         |
-| **INI**         | `.ini`, `.conf`, `.cfg` | **Medium**       | System configs, legacy applications              |
-| **Properties**  | `.properties`           | **Medium**       | Java ecosystem, Spring Boot                      |
-| **XML**         | `.xml`                  | **Medium**       | Enterprise systems, Java configs                 |
-| **HCL**         | `.hcl`                  | **Niche**        | Terraform, HashiCorp tools only                  |
-| **Plist**       | `.plist`                | **Niche**        | Apple/iOS development only                       |
-| **Pkl**         | `.pkl`                  | **Experimental** | Apple's new config language, very early adoption |
+| Format          | Extensions              | Usage Level      | Bidirectional  | Implementation Phase | Notes                                            |
+| --------------- | ----------------------- | ---------------- | -------------- | -------------------- | ------------------------------------------------ |
+| **Environment** | `.env`                  | **Universal**    | ✅ Full        | Phase 1              | Used in virtually every modern project           |
+| **JSON**        | `.json`                 | **Universal**    | ✅ Full        | Phase 1              | Standard data format, package.json, APIs         |
+| **YAML**        | `.yaml`, `.yml`         | **Very High**    | ✅ Full        | Phase 1              | Docker Compose, Kubernetes, CI/CD configs        |
+| **JavaScript**  | `.js`, `.mjs`           | **Very High**    | ✅ Full        | Phase 2              | Config files, build tools (webpack, vite, etc.)  |
+| **TypeScript**  | `.ts`, `.mts`           | **Very High**    | ✅ Full        | Phase 2              | Type-safe config files, modern tooling           |
+| **TOML**        | `.toml`                 | **Growing Fast** | ✅ Full        | Phase 2              | Rust ecosystem, Python pyproject.toml            |
+| **JSONC**       | `.jsonc`                | **High**         | ✅ Full        | Phase 2              | VS Code settings, tsconfig with comments         |
+| **XML**         | `.xml`                  | **Medium**       | ✅ Full        | Phase 3              | Enterprise systems, Java configs                 |
+| **INI**         | `.ini`, `.conf`, `.cfg` | **Medium**       | ✅ Full        | Phase 3              | System configs, legacy applications              |
+| **Properties**  | `.properties`           | **Medium**       | ✅ Full        | Phase 3              | Java ecosystem, Spring Boot                      |
+| **HCL**         | `.hcl`                  | **Niche**        | ✅ Full        | Phase 3              | Terraform, HashiCorp tools only                  |
+| **Plist**       | `.plist`                | **Niche**        | ✅ Full        | Phase 4              | Apple/iOS development only                       |
+| **Pkl**         | `.pkl`                  | **Experimental** | 📤 Output Only | Phase 4              | Apple's new config language, very early adoption |
+
+**Template Engines (Output Only):**
+
+| Engine         | Priority | Usage                        | Best For                          |
+| -------------- | -------- | ---------------------------- | --------------------------------- |
+| **Nunjucks**   | 1        | Most flexible, good DX       | Complex templates, logic required |
+| **Handlebars** | 2        | Widely known, good ecosystem | Simple logic, team familiarity    |
+| **Mustache**   | 3        | Simple, logic-less           | Basic templating, minimal logic   |
 
 ## Target Options Reference
 
-**Target types (sorted by common usage):**
+**Target types (sorted by implementation priority):**
 
-| Type         | Usage         | Description                                  |
-| ------------ | ------------- | -------------------------------------------- |
-| `env`        | **Universal** | Environment variable files - used everywhere |
-| `json`       | **Very High** | JSON configuration files                     |
-| `yaml`       | **High**      | YAML configs (Docker, K8s, CI/CD)            |
-| `template`   | **High**      | Custom templates for complex configs         |
-| `js`         | **Medium**    | JavaScript configuration modules             |
-| `ts`         | **Medium**    | TypeScript configuration modules             |
-| `toml`       | **Growing**   | TOML configs (Rust, Python projects)         |
-| `jsonc`      | **Medium**    | JSON with comments (VS Code, tsconfig)       |
-| `ini`        | **Medium**    | INI-style configuration files                |
-| `properties` | **Medium**    | Java properties files                        |
-| `xml`        | **Low**       | XML configuration (enterprise/legacy)        |
-| `hcl`        | **Niche**     | HashiCorp Configuration Language             |
-| `plist`      | **Niche**     | Apple Property List files                    |
+| Type         | Usage Level   | Phase | Description                                  |
+| ------------ | ------------- | ----- | -------------------------------------------- |
+| `env`        | **Universal** | 1     | Environment variable files - used everywhere |
+| `json`       | **Universal** | 1     | JSON configuration files                     |
+| `yaml`       | **Very High** | 1     | YAML configs (Docker, K8s, CI/CD)            |
+| `js`         | **Very High** | 2     | JavaScript configuration modules             |
+| `ts`         | **Very High** | 2     | TypeScript configuration modules             |
+| `toml`       | **Growing**   | 2     | TOML configs (Rust, Python projects)         |
+| `jsonc`      | **High**      | 2     | JSON with comments (VS Code, tsconfig)       |
+| `template`   | **High**      | 2     | Custom templates for complex configs         |
+| `xml`        | **Medium**    | 3     | XML configuration (enterprise/legacy)        |
+| `ini`        | **Medium**    | 3     | INI-style configuration files                |
+| `properties` | **Medium**    | 3     | Java properties files                        |
+| `hcl`        | **Niche**     | 3     | HashiCorp Configuration Language             |
+| `plist`      | **Niche**     | 4     | Apple Property List files                    |
 
 **Target options:**
 
