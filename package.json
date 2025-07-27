@@ -20,6 +20,7 @@
         "docs:start": "cd website && bun run start",
         "docs:build": "cd website && bun run build",
         "format": "prettier --write .",
+        "check": "tsc --noEmit",
         "prepare": "husky"
     },
     "homepage": "https://axonotes.github.io/axogen/",
