@@ -67,7 +67,7 @@ export {
 export {loadConfig} from "./core/config";
 
 // Export env utilities
-export {createTypedEnv} from "./env/typed";
+export {loadEnv, createTypedEnv} from "./env/typed";
 
 // Re-export Zod for convenience (users don't need to install it separately if they only use basic features)
 export {z} from "zod";

@@ -86,15 +86,14 @@ function handleValidationError(
 }
 
 /**
- * Creates a typed environment object from a Zod schema with runtime validation
- * Updated for Zod v4 with improved error handling and performance
+ *
  *
  * @example
  * ```ts
- * import { z } from 'zod';
- * import { createTypedEnv } from '@axonotes/axogen';
+ * import * as z from 'zod';
+ * import { loadEnv } from '@axonotes/axogen';
  *
- * const env = createTypedEnv({
+ * const env = loadEnv({
  *   API_KEY: z.string({
  *     error: "API_KEY is required and must be a string"
  *   }),
@@ -115,7 +114,7 @@ function handleValidationError(
  * @param config - Optional configuration for error handling and behavior
  * @returns Typed environment object with runtime validation
  */
-export function createTypedEnv<T extends EnvSchema>(
+export function loadEnv<T extends EnvSchema>(
     schema: T,
     config: EnvConfig = {}
 ): ParsedEnv<T> {
@@ -145,4 +144,15 @@ export function createTypedEnv<T extends EnvSchema>(
             throw error;
         }
     }
+}
+
+/**
+ * DEPRECATED: Use `loadEnv` instead
+ * @deprecated
+ */
+export function createTypedEnv<T extends EnvSchema>(
+    schema: T,
+    config: EnvConfig = {}
+): ParsedEnv<T> {
+    return loadEnv(schema, config);
 }
