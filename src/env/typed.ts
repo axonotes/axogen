@@ -2,6 +2,7 @@ import {z} from "zod";
 import type {EnvSchema, ParsedEnv, EnvConfig} from "../types";
 import {config} from "dotenv";
 import {pretty} from "../utils/pretty";
+import {isGitIgnored} from "../git/ignore-checker.ts";
 
 config({
     path: ".env.axogen",
@@ -118,6 +119,10 @@ export function loadEnv<T extends EnvSchema>(
     schema: T,
     config: EnvConfig = {}
 ): ParsedEnv<T> {
+    if (!isGitIgnored(".env.axogen")) {
+        pretty.warn("The .env.axogen file is not ignored by git.");
+    }
+
     const finalConfig = {...DEFAULT_CONFIG, ...config};
 
     try {
