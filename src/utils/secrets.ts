@@ -9,25 +9,10 @@ export interface SecretDetectionResult {
     category?: string;
 }
 
-export function isPotentiallyASecret(
-    key: string,
-    value: any
-): SecretDetectionResult {
-    // Handle non-string or empty values
-    if (typeof value !== "string" || !value.trim()) {
-        return {
-            isSecret: false,
-            reason: "Empty or non-string value",
-            confidence: "high",
-        };
-    }
-
-    const trimmedValue = value.trim();
-    const lowerKey = key.toLowerCase();
-
-    // 1. IMMEDIATE EXCLUSIONS
-    const obviouslyNotSecrets = [
-        // Booleans and common values
+// Pre-compiled regex patterns for performance
+class CompiledPatterns {
+    // Exclusion patterns
+    static readonly obviouslyNotSecrets = [
         /^(true|false|null|undefined)$/i,
         /^(yes|no|on|off|enabled?|disabled?)$/i,
         /^\d{1,5}$/, // Simple numbers
@@ -40,9 +25,9 @@ export function isPotentiallyASecret(
         /\.(com|org|net|edu|gov|io|co\.uk)$/i,
 
         // File paths and system patterns
-        /^\/[a-zA-Z0-9\/_-]*$/,
+        /^\/[a-zA-Z0-9\/_.-]*$/,
         /^[a-zA-Z]:[\\\/]/, // Windows paths
-        /^~\/[a-zA-Z0-9\/_-]*$/, // Unix home paths
+        /^~\/[a-zA-Z0-9\/_.-]*$/, // Unix home paths
 
         // HTTP and common values
         /^(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)$/i,
@@ -68,18 +53,8 @@ export function isPotentiallyASecret(
         /^(lorem|ipsum)/i,
     ];
 
-    for (const pattern of obviouslyNotSecrets) {
-        if (pattern.test(trimmedValue)) {
-            return {
-                isSecret: false,
-                reason: "Matches common non-secret pattern",
-                confidence: "high",
-            };
-        }
-    }
-
-    // 2. KNOWN SECRET PATTERNS
-    const knownSecretPatterns = [
+    // Known secret patterns with metadata
+    static readonly knownSecrets = [
         // AWS
         {
             pattern: /^AKIA[0-9A-Z]{16}$/,
@@ -181,14 +156,6 @@ export function isPotentiallyASecret(
             confidence: "high" as const,
         },
 
-        // Private Keys
-        {
-            pattern:
-                /-----BEGIN[\s\S]*PRIVATE KEY[\s\S]*-----END[\s\S]*PRIVATE KEY-----/,
-            type: "Private Key",
-            confidence: "high" as const,
-        },
-
         // Database URLs
         {
             pattern: /^(mongodb|mysql|postgresql|redis):\/\/[^\s]+$/,
@@ -196,7 +163,7 @@ export function isPotentiallyASecret(
             confidence: "high" as const,
         },
 
-        // Generic but high-confidence patterns
+        // Generic patterns
         {
             pattern: /^[0-9a-fA-F]{32,128}$/,
             type: "Long Hexadecimal String",
@@ -204,8 +171,228 @@ export function isPotentiallyASecret(
         },
     ];
 
-    for (const {pattern, type, confidence} of knownSecretPatterns) {
-        if (pattern.test(trimmedValue)) {
+    // Certificate patterns
+    static readonly certificatePatterns = [
+        {
+            pattern:
+                /-----BEGIN[\s\S]*?PRIVATE KEY[\s\S]*?-----END[\s\S]*?PRIVATE KEY-----/,
+            type: "RSA/EC Private Key",
+            confidence: "high" as const,
+        },
+        {
+            pattern:
+                /-----BEGIN[\s\S]*?CERTIFICATE[\s\S]*?-----END[\s\S]*?CERTIFICATE-----/,
+            type: "X.509 Certificate",
+            confidence: "high" as const,
+        },
+        {
+            pattern:
+                /-----BEGIN[\s\S]*?OPENSSH PRIVATE KEY[\s\S]*?-----END[\s\S]*?OPENSSH PRIVATE KEY-----/,
+            type: "OpenSSH Private Key",
+            confidence: "high" as const,
+        },
+        {
+            pattern: /ssh-(rsa|dss|ed25519|ecdsa)[A-Za-z0-9+/=\s]+/,
+            type: "SSH Public Key",
+            confidence: "medium" as const,
+        },
+    ];
+
+    // Base64 pattern
+    static readonly base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+
+    // Alphanumeric pattern
+    static readonly alphanumericPattern = /^[A-Za-z0-9_+=/-]+$/;
+
+    // Hex pattern
+    static readonly hexPattern = /^[0-9a-fA-F]+$/;
+
+    // URL parameter pattern
+    static readonly urlParameterPattern =
+        /[?&](token|key|secret|password|auth|pass|pwd|credential|cred|bearer|authorization|access|refresh|session|signature|cert|certificate|private|api)[=:]([^&\s#]+)/gi;
+
+    // Character type patterns
+    static readonly hasNumbers = /\d/;
+    static readonly hasLowerCase = /[a-z]/;
+    static readonly hasUpperCase = /[A-Z]/;
+    static readonly hasSpecialChars = /[^a-zA-Z0-9]/;
+}
+
+// Secret keywords
+const SECRET_KEYWORDS = new Set([
+    // High confidence keywords
+    "password",
+    "passwd",
+    "pwd",
+    "passphrase",
+    "secret",
+    "private_key",
+    "privatekey",
+    "api_key",
+    "apikey",
+    "api_secret",
+    "apisecret",
+    "access_token",
+    "accesstoken",
+    "auth_token",
+    "authtoken",
+    "bearer_token",
+    "client_secret",
+    "clientsecret",
+
+    // Medium confidence keywords
+    "key",
+    "token",
+    "auth",
+    "credential",
+    "cred",
+    "authorization",
+    "refresh_token",
+    "session_key",
+    "encryption_key",
+    "signature",
+
+    // Database specific
+    "db_password",
+    "database_password",
+    "mysql_password",
+    "postgres_password",
+    "connection_string",
+    "dsn",
+
+    // Certificate specific
+    "cert",
+    "certificate",
+    "pem",
+    "p12",
+    "pfx",
+    "keystore",
+]);
+
+// Entropy calculation cache for performance
+const entropyCache = new Map<string, number>();
+
+function calculateEntropy(str: string): number {
+    if (entropyCache.has(str)) {
+        return entropyCache.get(str)!;
+    }
+
+    if (!str || str.length < 2) return 0;
+
+    // Clean string for better entropy calculation
+    const cleanStr = str
+        .replace(/([a-zA-Z])\1{4,}/g, "$1$1$1") // Remove excessive repetition
+        .replace(/12345678/g, "") // Remove sequential numbers
+        .replace(/abcdefgh/gi, "") // Remove keyboard patterns
+        .replace(/qwerty/gi, "");
+
+    if (cleanStr.length < 2) return 0;
+
+    const freq: {[char: string]: number} = {};
+    for (const char of cleanStr) {
+        freq[char] = (freq[char] || 0) + 1;
+    }
+
+    let entropy = 0;
+    const length = cleanStr.length;
+
+    for (const count of Object.values(freq)) {
+        const probability = count / length;
+        entropy -= probability * Math.log2(probability);
+    }
+
+    // Cache the result
+    if (entropyCache.size > 1000) {
+        entropyCache.clear(); // Prevent memory leak
+    }
+    entropyCache.set(str, entropy);
+
+    return entropy;
+}
+
+function hasVeryLowEntropy(str: string): boolean {
+    // Check for excessive repetition
+    const uniqueChars = new Set(str).size;
+    if (uniqueChars <= 2 && str.length > 10) {
+        return true;
+    }
+
+    // Check entropy
+    const entropy = calculateEntropy(str);
+    if (entropy < 1.5) {
+        return true;
+    }
+
+    return false;
+}
+
+function isValidBase64(str: string): boolean {
+    try {
+        // Check if it matches base64 pattern
+        if (!CompiledPatterns.base64Pattern.test(str)) {
+            return false;
+        }
+
+        // Try to decode it
+        const decoded = atob(str);
+
+        // Check if re-encoding gives us the same result
+        const reencoded = btoa(decoded);
+        return reencoded === str;
+    } catch {
+        return false;
+    }
+}
+
+function checkUrlParameters(value: string): SecretDetectionResult | null {
+    const matches = [...value.matchAll(CompiledPatterns.urlParameterPattern)];
+
+    for (const match of matches) {
+        const paramName = match[1].toLowerCase();
+        const paramValue = match[2];
+
+        if (
+            paramValue &&
+            paramValue.length >= 8 &&
+            !hasVeryLowEntropy(paramValue)
+        ) {
+            const entropy = calculateEntropy(paramValue);
+            if (entropy >= 3.0) {
+                // Ensure high entropy for URL parameters
+                return {
+                    isSecret: true,
+                    reason: `Secret detected in URL parameter '${paramName}'`,
+                    confidence: "high",
+                    category: "URL Parameter Detection",
+                };
+            }
+        }
+    }
+
+    return null;
+}
+
+function checkCertificatesAndKeys(value: string): SecretDetectionResult | null {
+    for (const {
+        pattern,
+        type,
+        confidence,
+    } of CompiledPatterns.certificatePatterns) {
+        if (pattern.test(value)) {
+            return {
+                isSecret: true,
+                reason: `Detected ${type}`,
+                confidence,
+                category: "Certificate/Key Detection",
+            };
+        }
+    }
+    return null;
+}
+
+function checkKnownPatterns(value: string): SecretDetectionResult | null {
+    for (const {pattern, type, confidence} of CompiledPatterns.knownSecrets) {
+        if (pattern.test(value)) {
             return {
                 isSecret: true,
                 reason: `Matches ${type} pattern`,
@@ -214,103 +401,109 @@ export function isPotentiallyASecret(
             };
         }
     }
+    return null;
+}
 
-    // 3. SECRET CONTEXT KEYWORDS
-    const secretKeywords = [
-        // High confidence keywords
-        "password",
-        "passwd",
-        "pwd",
-        "passphrase",
-        "secret",
-        "private_key",
-        "privatekey",
-        "api_key",
-        "apikey",
-        "api_secret",
-        "apisecret",
-        "access_token",
-        "accesstoken",
-        "auth_token",
-        "authtoken",
-        "bearer_token",
-        "client_secret",
-        "clientsecret",
-
-        // Medium confidence keywords
-        "key",
-        "token",
-        "auth",
-        "credential",
-        "cred",
-        "authorization",
-        "refresh_token",
-        "session_key",
-        "encryption_key",
-        "signature",
-
-        // Database specific
-        "db_password",
-        "database_password",
-        "mysql_password",
-        "postgres_password",
-        "connection_string",
-        "dsn",
-
-        // Certificate specific
-        "cert",
-        "certificate",
-        "pem",
-        "p12",
-        "pfx",
-        "keystore",
-    ];
-
-    const hasSecretKeyword = secretKeywords.some((keyword) =>
-        lowerKey.includes(keyword)
-    );
-
-    // 4. ENTROPY ANALYSIS
-    function calculateImprovedEntropy(str: string): number {
-        if (!str) return 0;
-
-        const cleanStr = str
-            .replace(/([a-zA-Z])\1{4,}/g, "$1$1$1") // Only remove 4+ repeated chars, keep some
-            .replace(/12345678/g, "") // Only remove longer sequential numbers
-            .replace(/abcdefgh/gi, "") // Keep shorter sequences
-            .replace(/qwerty/gi, ""); // Remove keyboard patterns
-
-        if (cleanStr.length < 4) return 0;
-
-        const freq: {[char: string]: number} = {};
-        for (const char of cleanStr) {
-            freq[char] = (freq[char] || 0) + 1;
+function checkObviousNonSecrets(value: string): boolean {
+    for (const pattern of CompiledPatterns.obviouslyNotSecrets) {
+        if (pattern.test(value)) {
+            return true;
         }
+    }
+    return false;
+}
 
-        let entropy = 0;
-        const length = cleanStr.length;
-
-        for (const count of Object.values(freq)) {
-            const probability = count / length;
-            entropy -= probability * Math.log2(probability);
+function hasSecretKeyword(key: string): boolean {
+    const lowerKey = key.toLowerCase();
+    for (const keyword of SECRET_KEYWORDS) {
+        if (lowerKey.includes(keyword)) {
+            return true;
         }
+    }
+    return false;
+}
 
-        return entropy;
+function analyzeComplexity(value: string): number {
+    return [
+        CompiledPatterns.hasNumbers.test(value),
+        CompiledPatterns.hasLowerCase.test(value),
+        CompiledPatterns.hasUpperCase.test(value),
+        CompiledPatterns.hasSpecialChars.test(value),
+    ].filter(Boolean).length;
+}
+
+export function isPotentiallyASecret(
+    key: string,
+    value: any
+): SecretDetectionResult {
+    // Early validation
+    if (typeof value !== "string" || !value.trim()) {
+        return {
+            isSecret: false,
+            reason: "Empty or non-string value",
+            confidence: "high",
+        };
     }
 
-    const entropy = calculateImprovedEntropy(trimmedValue);
+    const trimmedValue = value.trim();
     const length = trimmedValue.length;
 
-    // 5. SMART DETECTION RULES - Reduced false positives
+    // Quick length check for performance
+    if (length < 4) {
+        return {
+            isSecret: false,
+            reason: "Value too short",
+            confidence: "high",
+        };
+    }
 
-    // Rule 1: High-confidence secret keywords + reasonable value
-    if (hasSecretKeyword && length >= 8) {
-        // Additional validation for known false positives
+    // Early exit for very low entropy strings
+    if (length >= 20 && hasVeryLowEntropy(trimmedValue)) {
+        return {
+            isSecret: false,
+            reason: "Very low entropy (repetitive content)",
+            confidence: "high",
+        };
+    }
+
+    // 1. Check for obvious non-secrets first (fastest check)
+    if (checkObviousNonSecrets(trimmedValue)) {
+        return {
+            isSecret: false,
+            reason: "Matches common non-secret pattern",
+            confidence: "high",
+        };
+    }
+
+    // 2. Check for URL parameters
+    const urlResult = checkUrlParameters(trimmedValue);
+    if (urlResult) return urlResult;
+
+    // 3. Check certificates and private keys
+    const certResult = checkCertificatesAndKeys(trimmedValue);
+    if (certResult) return certResult;
+
+    // 4. Check known secret patterns
+    const knownResult = checkKnownPatterns(trimmedValue);
+    if (knownResult) return knownResult;
+
+    // 5. Check for secret context keywords
+    const hasKeyword = hasSecretKeyword(key);
+
+    // 6. High-confidence keyword check
+    if (hasKeyword && length >= 8) {
+        // Additional validation for test values
+        const testKeywords = [
+            "test",
+            "example",
+            "demo",
+            "placeholder",
+            "sample",
+        ];
         if (
-            trimmedValue.includes("test") ||
-            trimmedValue.includes("example") ||
-            trimmedValue.includes("demo") ||
-            trimmedValue.includes("placeholder")
+            testKeywords.some((keyword) =>
+                trimmedValue.toLowerCase().includes(keyword)
+            )
         ) {
             return {
                 isSecret: false,
@@ -327,49 +520,41 @@ export function isPotentiallyASecret(
         };
     }
 
-    // Rule 2: Improved entropy thresholds
-    let entropyThreshold = 3.8;
-    if (length >= 32) entropyThreshold = 4.2;
-    if (length >= 64) entropyThreshold = 4.7;
+    // 7. Entropy analysis (only for longer strings to save computation)
+    if (length >= 12) {
+        const entropy = calculateEntropy(trimmedValue);
 
-    if (entropy >= entropyThreshold && length >= 12) {
-        // Additional checks to reduce false positives
-        const hasNumbers = /\d/.test(trimmedValue);
-        const hasLowerCase = /[a-z]/.test(trimmedValue);
-        const hasUpperCase = /[A-Z]/.test(trimmedValue);
-        const hasSpecialChars = /[^a-zA-Z0-9]/.test(trimmedValue);
+        // Dynamic entropy thresholds
+        let entropyThreshold = 3.8;
+        if (length >= 32) entropyThreshold = 4.2;
+        if (length >= 64) entropyThreshold = 4.7;
 
-        const complexityScore = [
-            hasNumbers,
-            hasLowerCase,
-            hasUpperCase,
-            hasSpecialChars,
-        ].filter(Boolean).length;
+        if (entropy >= entropyThreshold) {
+            const complexityScore = analyzeComplexity(trimmedValue);
 
-        if (complexityScore >= 2) {
-            return {
-                isSecret: true,
-                reason: `High entropy (${entropy.toFixed(2)}) with character complexity in ${length}-char string`,
-                confidence: "medium",
-                category: "Entropy-based detection",
-            };
+            if (complexityScore >= 2) {
+                return {
+                    isSecret: true,
+                    reason: `High entropy (${entropy.toFixed(2)}) with character complexity in ${length}-char string`,
+                    confidence: "medium",
+                    category: "Entropy-based detection",
+                };
+            }
         }
     }
 
-    // Rule 3: Long alphanumeric strings
+    // 8. Long alphanumeric strings
     if (
         length >= 24 &&
-        /^[A-Za-z0-9_+=/-]+$/.test(trimmedValue) &&
+        CompiledPatterns.alphanumericPattern.test(trimmedValue) &&
         !/\s/.test(trimmedValue)
     ) {
-        // Lowered from 32
-        // Only exclude obvious hashes with very specific patterns
+        // Exclude obvious hashes without secret context
         if (
-            /^[0-9a-f]+$/i.test(trimmedValue) &&
+            CompiledPatterns.hexPattern.test(trimmedValue) &&
             length === 32 &&
-            !hasSecretKeyword
+            !hasKeyword
         ) {
-            // Likely MD5 hash, but still flag if it has secret keyword
             return {
                 isSecret: false,
                 reason: "Likely MD5 hash without secret context",
@@ -385,9 +570,17 @@ export function isPotentiallyASecret(
         };
     }
 
-    // Rule 4: Hex strings
-    if (length >= 32 && /^[0-9a-fA-F]+$/.test(trimmedValue)) {
-        // Common hash lengths: 32 (MD5), 40 (SHA1), 64 (SHA256), etc.
+    // 9. Hex strings
+    if (length >= 32 && CompiledPatterns.hexPattern.test(trimmedValue)) {
+        const entropy = calculateEntropy(trimmedValue);
+        if (entropy < 2.0) {
+            return {
+                isSecret: false,
+                reason: "Low entropy hexadecimal string",
+                confidence: "medium",
+            };
+        }
+
         const commonHashLengths = [32, 40, 56, 64, 96, 128];
         if (commonHashLengths.includes(length)) {
             return {
@@ -399,37 +592,28 @@ export function isPotentiallyASecret(
         }
     }
 
-    // Rule 5: Base64-like strings
-    if (
-        length >= 20 &&
-        length % 4 === 0 &&
-        /^[A-Za-z0-9+/]*={0,2}$/.test(trimmedValue)
-    ) {
-        // Check if it's actually base64 encoded data
-        try {
-            const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-            if (base64Regex.test(trimmedValue) && entropy >= 3.5) {
-                return {
-                    isSecret: true,
-                    reason: `${length}-character base64-like string with high entropy`,
-                    confidence: "medium",
-                    category: "Base64 detection",
-                };
-            }
-        } catch {
-            // Fallback: treat as potential secret if it looks like base64
+    // 10. Improved Base64 detection
+    if (length >= 20 && length % 4 === 0) {
+        if (isValidBase64(trimmedValue)) {
+            const entropy = calculateEntropy(trimmedValue);
             if (entropy >= 3.5) {
                 return {
                     isSecret: true,
-                    reason: `${length}-character base64-like string with high entropy`,
+                    reason: `${length}-character valid base64 string with high entropy`,
                     confidence: "medium",
                     category: "Base64 detection",
+                };
+            } else {
+                return {
+                    isSecret: false,
+                    reason: "Valid base64 but low entropy",
+                    confidence: "medium",
                 };
             }
         }
     }
 
-    // Rule 6: UUID-like but extended (custom tokens)
+    // 11. UUID-like but extended (custom tokens)
     if (
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}[0-9a-fA-F]+$/.test(
             trimmedValue
@@ -443,28 +627,23 @@ export function isPotentiallyASecret(
         };
     }
 
-    // Rule 7: Mixed complexity
-    if (length >= 20 && hasSecretKeyword && entropy >= 3.0) {
-        const hasNumbers = /\d/.test(trimmedValue);
-        const hasLowerCase = /[a-z]/.test(trimmedValue);
-        const hasUpperCase = /[A-Z]/.test(trimmedValue);
-        const hasSpecialChars = /[^a-zA-Z0-9]/.test(trimmedValue);
-
-        if (
-            [hasNumbers, hasLowerCase, hasUpperCase, hasSpecialChars].filter(
-                Boolean
-            ).length >= 3
-        ) {
-            return {
-                isSecret: true,
-                reason: `Secret keyword with mixed complexity (${entropy.toFixed(2)} entropy)`,
-                confidence: "medium",
-                category: "Complex pattern detection",
-            };
+    // 12. Mixed complexity with keyword context
+    if (length >= 20 && hasKeyword) {
+        const entropy = calculateEntropy(trimmedValue);
+        if (entropy >= 3.0) {
+            const complexityScore = analyzeComplexity(trimmedValue);
+            if (complexityScore >= 3) {
+                return {
+                    isSecret: true,
+                    reason: `Secret keyword with mixed complexity (${entropy.toFixed(2)} entropy)`,
+                    confidence: "medium",
+                    category: "Complex pattern detection",
+                };
+            }
         }
     }
 
-    // Rule 8: Known secret prefixes
+    // 13. Known secret prefixes
     const secretPrefixes = [
         {prefix: "sk_", minLength: 16, confidence: "high" as const},
         {prefix: "pk_", minLength: 16, confidence: "medium" as const},
@@ -487,7 +666,7 @@ export function isPotentiallyASecret(
         }
     }
 
-    // If we get here, probably not a secret
+    // Default: not a secret
     return {
         isSecret: false,
         reason: "No secret patterns detected",
@@ -506,4 +685,9 @@ export function hasSecrets(data: Record<string, any>): boolean {
         }
     }
     return false;
+}
+
+// Utility function to clear entropy cache (for memory management)
+export function clearEntropyCache(): void {
+    entropyCache.clear();
 }
