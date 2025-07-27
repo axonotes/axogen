@@ -2,6 +2,7 @@
 
 import ansis from "ansis";
 import {getTheme, type ThemeName, themes, listThemes} from "./themes";
+import type {SecretsAnalysisResult} from "./secrets.ts";
 
 /**
  * Log levels for controlling output verbosity
@@ -229,6 +230,109 @@ export const pretty = {
             shouldUseColors() ? ansis.dim(text) : text,
         loading(text: string) {
             return `${colorize("🚀", currentTheme.colors.accent)} ${text}`;
+        },
+    },
+
+    /**
+     * Secrets detection utilities
+     */
+    secrets: {
+        /**
+         * Show secrets detection results with security-focused formatting
+         */
+        detected: (title: string, result: SecretsAnalysisResult): void => {
+            if (!shouldLog(LogLevel.ERROR)) return;
+
+            // Main error with security icon
+            console.error(
+                `${colorize("🔒", currentTheme.colors.error)} ${colorize(title, currentTheme.colors.error)}`
+            );
+            console.log(); // Breathing room
+
+            // Security summary
+            console.log(
+                `  ${colorize("Security Risk:", currentTheme.colors.error)} ${result.totalCount} potential secret${result.totalCount !== 1 ? "s" : ""} detected`
+            );
+
+            if (result.highConfidenceCount > 0) {
+                console.log(
+                    `  ${colorize("High Risk:", currentTheme.colors.error)} ${result.highConfidenceCount} high-confidence detection${result.highConfidenceCount !== 1 ? "s" : ""}`
+                );
+            }
+
+            if (result.mediumConfidenceCount > 0) {
+                console.log(
+                    `  ${colorize("Medium Risk:", currentTheme.colors.warning)} ${result.mediumConfidenceCount} medium-confidence detection${result.mediumConfidenceCount !== 1 ? "s" : ""}`
+                );
+            }
+
+            if (result.lowConfidenceCount > 0) {
+                console.log(
+                    `  ${colorize("Low Risk:", currentTheme.colors.muted)} ${result.lowConfidenceCount} low-confidence detection${result.lowConfidenceCount !== 1 ? "s" : ""}`
+                );
+            }
+
+            console.log(); // Breathing room
+
+            // Group by confidence level
+            const high = result.secretsFound.filter(
+                (s) => s.confidence === "high"
+            );
+            const medium = result.secretsFound.filter(
+                (s) => s.confidence === "medium"
+            );
+            const low = result.secretsFound.filter(
+                (s) => s.confidence === "low"
+            );
+
+            if (high.length > 0) {
+                console.log(
+                    `  ${colorize("🚨 HIGH CONFIDENCE SECRETS:", currentTheme.colors.error)}`
+                );
+                high.forEach((secret) => {
+                    const category = secret.category
+                        ? ` (${secret.category})`
+                        : "";
+                    console.log(
+                        `    ${colorize("•", currentTheme.colors.error)} ${colorize(secret.path || secret.key, currentTheme.colors.accent)}: ${secret.reason}${category}`
+                    );
+                });
+                if (medium.length > 0 || low.length > 0) console.log();
+            }
+
+            if (medium.length > 0) {
+                console.log(
+                    `  ${colorize("⚠️  MEDIUM CONFIDENCE SECRETS:", currentTheme.colors.warning)}`
+                );
+                medium.forEach((secret) => {
+                    const category = secret.category
+                        ? ` (${secret.category})`
+                        : "";
+                    console.log(
+                        `    ${colorize("•", currentTheme.colors.warning)} ${colorize(secret.path || secret.key, currentTheme.colors.accent)}: ${secret.reason}${category}`
+                    );
+                });
+                if (low.length > 0) console.log();
+            }
+
+            if (low.length > 0) {
+                console.log(
+                    `  ${colorize("ℹ️  LOW CONFIDENCE DETECTIONS:", currentTheme.colors.muted)}`
+                );
+                low.forEach((secret) => {
+                    const category = secret.category
+                        ? ` (${secret.category})`
+                        : "";
+                    console.log(
+                        `    ${colorize("•", currentTheme.colors.muted)} ${colorize(secret.path || secret.key, currentTheme.colors.accent)}: ${secret.reason}${category}`
+                    );
+                });
+            }
+
+            console.log();
+            console.log(
+                `  ${colorize("⛔", currentTheme.colors.error)} ${colorize("Generation blocked for security reasons", currentTheme.colors.error)}`
+            );
         },
     },
 

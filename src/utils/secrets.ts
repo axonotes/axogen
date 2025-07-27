@@ -2,6 +2,7 @@
  * Research-based secret detection
  */
 import {pretty} from "./pretty.ts";
+import * as z from "zod";
 
 export interface SecretDetectionResult {
     isSecret: boolean;
@@ -14,6 +15,7 @@ export interface SecretsAnalysisResult {
     hasSecrets: boolean;
     secretsFound: Array<{
         key: string;
+        path: string;
         reason: string;
         confidence: "low" | "medium" | "high";
         category?: string;
@@ -800,6 +802,25 @@ export function isPotentiallyASecret(
     };
 }
 
+const unsafeSchema = z
+    .object({
+        _marker: z.literal("unsafe"),
+        value: z.string(),
+        reason: z.string(),
+    })
+    .strict();
+
+export function unsafe(
+    value: string,
+    reason: string
+): z.infer<typeof unsafeSchema> {
+    return {
+        _marker: "unsafe",
+        value,
+        reason,
+    };
+}
+
 // Helper function for integration with nested data support
 export function hasSecrets(
     data: Record<string, any>,
@@ -827,6 +848,16 @@ export function hasSecrets(
                 `Maximum depth of ${maxDepth} exceeded while traversing object. Skipping further traversal.`
             );
             return;
+        }
+
+        // Skip unsafe objects
+        if (obj && typeof obj === "object" && "_marker" in obj) {
+            if (unsafeSchema.safeParse(obj).success) {
+                pretty.warn(
+                    `Skipping unsafe object at path '${currentPath}': ${obj.reason}`
+                );
+                return;
+            }
         }
 
         // Handle circular references
@@ -894,6 +925,45 @@ export function hasSecrets(
         mediumConfidenceCount,
         lowConfidenceCount,
     };
+}
+
+export function unwrapUnsafe(data: any): any {
+    const visited = new WeakSet();
+
+    function traverse(obj: any): any {
+        // Handle null and primitive types
+        if (obj === null || typeof obj !== "object") {
+            return obj;
+        }
+
+        // Handle circular references
+        if (visited.has(obj)) {
+            return obj; // Return original to avoid infinite loops
+        }
+        visited.add(obj);
+
+        // Check if this is an unsafe object
+        if (obj && typeof obj === "object" && "_marker" in obj) {
+            if (unsafeSchema.safeParse(obj).success) {
+                return obj.value; // Unwrap the unsafe object
+            }
+        }
+
+        // Handle arrays
+        if (Array.isArray(obj)) {
+            return obj.map((item) => traverse(item));
+        }
+
+        // Handle regular objects
+        const result: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = traverse(value);
+        }
+
+        return result;
+    }
+
+    return traverse(data);
 }
 
 // Utility function to clear entropy cache (for memory management)

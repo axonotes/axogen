@@ -6,6 +6,9 @@ import {JsonGenerator} from "./json";
 import {YamlGenerator} from "./yaml";
 import {TomlGenerator} from "./toml";
 import {TemplateGenerator} from "./template";
+import {hasSecrets, unwrapUnsafe} from "../utils/secrets.ts";
+import {pretty} from "../utils/pretty.ts";
+import {isGitIgnored} from "../git/ignore-checker.ts";
 
 export interface GenerateOptions {
     /** Show what would be generated without writing files */
@@ -28,6 +31,42 @@ export class TargetGenerator {
         options: GenerateOptions = {}
     ): Promise<{path: string; content: string}> {
         const {baseDir = process.cwd()} = options;
+
+        // Resolve full path
+        const fullPath = resolve(baseDir, target.path);
+
+        // Check if the target has secrets
+        const secretsAnalysisResult = hasSecrets(target.variables);
+        if (secretsAnalysisResult.hasSecrets) {
+            let isIgnored = false;
+
+            try {
+                // Check if the target is ignored by git
+                isIgnored = isGitIgnored(fullPath);
+            } catch (e) {
+                const message = e instanceof Error ? e.message : String(e);
+                pretty.warn(
+                    `Failed to check if target is ignored by git: ${message}`
+                );
+            }
+
+            if (!isIgnored) {
+                pretty.secrets.detected(
+                    `Target "${targetName}" contains secrets and cannot be generated!`,
+                    secretsAnalysisResult
+                );
+
+                console.log();
+                pretty.info(
+                    "To resolve this, add the target to your .gitignore file or remove the secrets from the target configuration."
+                );
+
+                throw new Error(`Target "${targetName}" contains secrets`);
+            }
+        }
+
+        // Unwrap unsafe objects
+        target.variables = unwrapUnsafe(target.variables);
 
         try {
             // Generate content based on target type
@@ -54,9 +93,6 @@ export class TargetGenerator {
                         `Unsupported target type: ${(target as any).type}`
                     );
             }
-
-            // Resolve full path
-            const fullPath = resolve(baseDir, target.path);
 
             return {path: fullPath, content};
         } catch (error) {
