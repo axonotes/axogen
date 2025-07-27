@@ -824,6 +824,7 @@ export function unsafe(
 // Helper function for integration with nested data support
 export function hasSecrets(
     data: Record<string, any>,
+    template: string,
     maxDepth: number = 100
 ): SecretsAnalysisResult {
     const secretsFound: Array<{
@@ -845,7 +846,7 @@ export function hasSecrets(
         // Prevent infinite recursion
         if (depth > maxDepth) {
             pretty.warn(
-                `Maximum depth of ${maxDepth} exceeded while traversing object. Skipping further traversal.`
+                `${template}: Maximum depth of ${maxDepth} exceeded while traversing object. Skipping further traversal.`
             );
             return;
         }
@@ -854,7 +855,7 @@ export function hasSecrets(
         if (obj && typeof obj === "object" && "_marker" in obj) {
             if (unsafeSchema.safeParse(obj).success) {
                 pretty.warn(
-                    `Skipping unsafe object at path '${currentPath}': ${obj.reason}`
+                    `${template}: Skipping unsafe object at path '${currentPath}': ${obj.reason}`
                 );
                 return;
             }

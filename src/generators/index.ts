@@ -36,7 +36,7 @@ export class TargetGenerator {
         const fullPath = resolve(baseDir, target.path);
 
         // Check if the target has secrets
-        const secretsAnalysisResult = hasSecrets(target.variables);
+        const secretsAnalysisResult = hasSecrets(target.variables, targetName);
         if (secretsAnalysisResult.hasSecrets) {
             let isIgnored = false;
 
