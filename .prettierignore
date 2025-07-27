@@ -14,6 +14,7 @@ node_modules
 .classpath
 .cproject
 .settings/
+website/.docusaurus
 
 # Package Manager Lockfiles
 package-lock.json
