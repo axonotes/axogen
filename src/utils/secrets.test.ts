@@ -583,7 +583,7 @@ describe("Secret Detection", () => {
                 api_url: "https://api.example.com",
             };
 
-            expect(hasSecrets(data)).toBe(true);
+            expect(hasSecrets(data).hasSecrets).toBe(true);
         });
 
         test("should not detect secrets in clean data", () => {
@@ -594,7 +594,7 @@ describe("Secret Detection", () => {
                 environment: "development",
             };
 
-            expect(hasSecrets(data)).toBe(false);
+            expect(hasSecrets(data).hasSecrets).toBe(false);
         });
     });
 
@@ -666,7 +666,7 @@ describe("Secret Detection", () => {
                 environment: "development",
             };
 
-            expect(hasSecrets(config)).toBe(true);
+            expect(hasSecrets(config).hasSecrets).toBe(true);
         });
 
         test("should handle environment variables", () => {
@@ -678,7 +678,7 @@ describe("Secret Detection", () => {
                 TIMEOUT: "30000",
             };
 
-            expect(hasSecrets(envVars)).toBe(true);
+            expect(hasSecrets(envVars).hasSecrets).toBe(true);
         });
 
         test("should not flag common development values", () => {
@@ -691,7 +691,7 @@ describe("Secret Detection", () => {
                 log_level: "debug",
             };
 
-            expect(hasSecrets(devConfig)).toBe(false);
+            expect(hasSecrets(devConfig).hasSecrets).toBe(false);
         });
     });
 });

@@ -1,12 +1,27 @@
 /**
  * Research-based secret detection
  */
+import {pretty} from "./pretty.ts";
 
 export interface SecretDetectionResult {
     isSecret: boolean;
     reason: string;
     confidence: "low" | "medium" | "high";
     category?: string;
+}
+
+export interface SecretsAnalysisResult {
+    hasSecrets: boolean;
+    secretsFound: Array<{
+        key: string;
+        reason: string;
+        confidence: "low" | "medium" | "high";
+        category?: string;
+    }>;
+    totalCount: number;
+    highConfidenceCount: number;
+    mediumConfidenceCount: number;
+    lowConfidenceCount: number;
 }
 
 // Pre-compiled regex patterns for performance
@@ -785,17 +800,100 @@ export function isPotentiallyASecret(
     };
 }
 
-// Helper function for integration
-export function hasSecrets(data: Record<string, any>): boolean {
-    for (const [key, value] of Object.entries(data)) {
-        if (typeof value === "string") {
-            const result = isPotentiallyASecret(key, value);
-            if (result.isSecret && result.confidence !== "low") {
-                return true;
+// Helper function for integration with nested data support
+export function hasSecrets(
+    data: Record<string, any>,
+    maxDepth: number = 100
+): SecretsAnalysisResult {
+    const secretsFound: Array<{
+        key: string;
+        path: string;
+        reason: string;
+        confidence: "low" | "medium" | "high";
+        category?: string;
+    }> = [];
+
+    // Set to track visited objects (prevents infinite loops with circular references)
+    const visited = new WeakSet();
+
+    function traverseObject(
+        obj: any,
+        currentPath: string = "",
+        depth: number = 0
+    ): void {
+        // Prevent infinite recursion
+        if (depth > maxDepth) {
+            pretty.warn(
+                `Maximum depth of ${maxDepth} exceeded while traversing object. Skipping further traversal.`
+            );
+            return;
+        }
+
+        // Handle circular references
+        if (obj !== null && typeof obj === "object") {
+            if (visited.has(obj)) {
+                return;
+            }
+            visited.add(obj);
+        }
+
+        // Handle arrays
+        if (Array.isArray(obj)) {
+            obj.forEach((item, index) => {
+                const itemPath = currentPath
+                    ? `${currentPath}[${index}]`
+                    : `[${index}]`;
+                traverseObject(item, itemPath, depth + 1);
+            });
+            return;
+        }
+
+        // Handle objects
+        if (obj !== null && typeof obj === "object") {
+            for (const [key, value] of Object.entries(obj)) {
+                const newPath = currentPath ? `${currentPath}.${key}` : key;
+
+                if (typeof value === "string") {
+                    const result = isPotentiallyASecret(key, value);
+                    if (result.isSecret) {
+                        secretsFound.push({
+                            key,
+                            path: newPath,
+                            reason: result.reason,
+                            confidence: result.confidence,
+                            category: result.category,
+                        });
+                    }
+                } else if (
+                    value !== null &&
+                    (typeof value === "object" || Array.isArray(value))
+                ) {
+                    traverseObject(value, newPath, depth + 1);
+                }
             }
         }
     }
-    return false;
+
+    traverseObject(data);
+
+    const highConfidenceCount = secretsFound.filter(
+        (s) => s.confidence === "high"
+    ).length;
+    const mediumConfidenceCount = secretsFound.filter(
+        (s) => s.confidence === "medium"
+    ).length;
+    const lowConfidenceCount = secretsFound.filter(
+        (s) => s.confidence === "low"
+    ).length;
+
+    return {
+        hasSecrets: secretsFound.length > 0,
+        secretsFound,
+        totalCount: secretsFound.length,
+        highConfidenceCount,
+        mediumConfidenceCount,
+        lowConfidenceCount,
+    };
 }
 
 // Utility function to clear entropy cache (for memory management)
