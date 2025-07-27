@@ -1,7 +1,7 @@
 import {resolve, join} from "node:path";
 import {access, constants} from "node:fs/promises";
 import {z} from "zod";
-import type {AxogenConfig, ConfigInput} from "../types";
+import {type AxogenConfig, type ConfigInput, normalizeConfig} from "../types";
 import {axogenConfigSchema} from "../types";
 import {createJiti} from "jiti";
 import {pretty} from "../utils/pretty";
@@ -89,10 +89,7 @@ export class ConfigLoader {
 
     /** Resolve config input (handle functions) */
     private async resolveConfig(input: ConfigInput): Promise<AxogenConfig> {
-        if (typeof input === "function") {
-            return await input();
-        }
-        return input;
+        return await normalizeConfig(input);
     }
 
     /** Find the config file path */

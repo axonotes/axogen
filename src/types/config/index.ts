@@ -21,6 +21,9 @@ export const axogenConfigSchema = z
     })
     .strict();
 
+// Schema for direct variables input
+export const variablesSchema = z.record(z.string(), z.unknown());
+
 // Type exports (inferred from schemas)
 export type EnvTarget = z.infer<typeof envTargetSchema>;
 export type JsonTarget = z.infer<typeof jsonTargetSchema>;
@@ -30,8 +33,55 @@ export type TemplateTarget = z.infer<typeof templateTargetSchema>;
 export type Target = z.infer<typeof targetSchema>;
 
 export type AxogenConfig = z.infer<typeof axogenConfigSchema>;
-export type ConfigFunction = () => AxogenConfig | Promise<AxogenConfig>;
-export type ConfigInput = AxogenConfig | ConfigFunction;
+export type Variables = z.infer<typeof variablesSchema>;
+export type ConfigFunction = () =>
+    | AxogenConfig
+    | Variables
+    | Promise<AxogenConfig | Variables>;
+export type ConfigInput = AxogenConfig | Variables | ConfigFunction;
+
+// Helper function to detect if input is direct variables
+export function isVariablesInput(input: unknown): input is Variables {
+    if (!input || typeof input !== "object") return false;
+
+    // If it has any of the AxogenConfig keys, it's not a variables input
+    const axogenKeys = ["watch", "targets", "commands"];
+    const inputKeys = Object.keys(input);
+
+    return !axogenKeys.some((key) => inputKeys.includes(key));
+}
+
+// Helper function to convert variables input to full config
+export function variablesToConfig(variables: Variables): AxogenConfig {
+    return {
+        targets: {
+            env: {
+                path: ".env",
+                type: "env",
+                variables,
+            },
+        },
+    };
+}
+
+// Helper function to normalize any config input to AxogenConfig
+export async function normalizeConfig(
+    input: ConfigInput
+): Promise<AxogenConfig> {
+    if (typeof input === "function") {
+        const result = input();
+        if (result instanceof Promise) {
+            return result.then((resolved) =>
+                isVariablesInput(resolved)
+                    ? variablesToConfig(resolved)
+                    : resolved
+            );
+        }
+        return isVariablesInput(result) ? variablesToConfig(result) : result;
+    }
+
+    return isVariablesInput(input) ? variablesToConfig(input) : input;
+}
 
 // Helper function to validate targets with better error messages
 export function validateTarget(name: string, target: unknown): Target {
