@@ -358,7 +358,7 @@ describe("Secret Detection", () => {
     });
 
     describe("Database Connection Strings", () => {
-        test("should detect MongoDB connection string", () => {
+        test("should not detect default MongoDB connection string", () => {
             const result = isPotentiallyASecret(
                 "db_url",
                 "mongodb://user:password@localhost:27017/database"
@@ -367,12 +367,32 @@ describe("Secret Detection", () => {
             expect(result.confidence).toBe("high");
         });
 
-        test("should detect PostgreSQL connection string", () => {
+        test("should detect MongoDB connection string with high entropy", () => {
+            const secretValue = generateHighEntropyString(64);
+            const result = isPotentiallyASecret(
+                "db_url",
+                `mongodb://user:${secretValue}@localhost:27017/database`
+            );
+            expect(result.isSecret).toBe(true);
+            expect(result.confidence).toBe("high");
+        });
+
+        test("should not detect default PostgreSQL connection string", () => {
             const result = isPotentiallyASecret(
                 "database_url",
                 "postgresql://user:password@localhost:5432/database"
             );
             expect(result.isSecret).toBe(false);
+            expect(result.confidence).toBe("high");
+        });
+
+        test("should detect PostgreSQL connection string with high entropy", () => {
+            const secretValue = generateHighEntropyString(64);
+            const result = isPotentiallyASecret(
+                "database_url",
+                `postgresql://user:${secretValue}@localhost:5432/database`
+            );
+            expect(result.isSecret).toBe(true);
             expect(result.confidence).toBe("high");
         });
     });

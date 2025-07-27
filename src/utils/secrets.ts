@@ -156,13 +156,6 @@ class CompiledPatterns {
             confidence: "high" as const,
         },
 
-        // Database URLs
-        {
-            pattern: /^(mongodb|mysql|postgresql|redis):\/\/[^\s]+$/,
-            type: "Database Connection String",
-            confidence: "high" as const,
-        },
-
         // Generic patterns
         {
             pattern: /^[0-9a-fA-F]{32,128}$/,
@@ -356,6 +349,21 @@ function checkUrlParameters(value: string): SecretDetectionResult | null {
             paramValue.length >= 8 &&
             !hasVeryLowEntropy(paramValue)
         ) {
+            // Check for obvious fake/test patterns in URL parameters
+            const testPatterns = [
+                /^(test|demo|sample|example|fake|placeholder)/i,
+                /^(abc123|123abc|password123|secret123)/i,
+                /^(foo|bar|baz).*key/i,
+                /(test|demo|sample|example|fake)$/i,
+            ];
+
+            const isFakePattern = testPatterns.some((pattern) =>
+                pattern.test(paramValue)
+            );
+            if (isFakePattern) {
+                return null; // Don't flag as secret
+            }
+
             const entropy = calculateEntropy(paramValue);
             if (entropy >= 3.0) {
                 // Ensure high entropy for URL parameters
@@ -364,6 +372,95 @@ function checkUrlParameters(value: string): SecretDetectionResult | null {
                     reason: `Secret detected in URL parameter '${paramName}'`,
                     confidence: "high",
                     category: "URL Parameter Detection",
+                };
+            }
+        }
+    }
+
+    return null;
+}
+
+function checkConnectionStrings(value: string): SecretDetectionResult | null {
+    // General connection string patterns that contain credentials
+    const connectionPatterns = [
+        // protocol://user:password@host:port/database
+        /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^:\/\s]+:([^@\s]+)@[^\/\s]+/,
+        // protocol://user:password@host/database
+        /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^:\/\s]+:([^@\s]+)@[^\/\s]+/,
+        // protocol://:password@host (no username)
+        /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/:([^@\s]+)@[^\/\s]+/,
+        // user:password@host:port (no protocol)
+        /^[^:\/\s]+:([^@\s]+)@[^\/\s]+:\d+/,
+        // user:password@host (no protocol, no port)
+        /^[^:\/\s]+:([^@\s]+)@[^\/\s]+$/,
+    ];
+
+    for (const pattern of connectionPatterns) {
+        const match = value.match(pattern);
+        if (match && match[1]) {
+            const credential = match[1];
+
+            // Skip obvious placeholders or common weak passwords
+            const placeholderPatterns = [
+                /^(password|secret|pass|pwd|test|demo|example|placeholder|changeme|admin|root|user|guest)$/i,
+                /^(123456|password123|admin123|test123)$/i,
+                /^(abc|xyz|foo|bar|baz)$/i,
+                /^(abc123|test123|demo123|example123)/i,
+                /secretkey$/i, // ends with "secretkey"
+                /^fake/i, // starts with "fake"
+                /^sample/i, // starts with "sample"
+            ];
+
+            if (placeholderPatterns.some((p) => p.test(credential))) {
+                return null;
+            }
+
+            // Check credential length and entropy
+            if (credential.length >= 8) {
+                const entropy = calculateEntropy(credential);
+                if (entropy >= 3.0) {
+                    return {
+                        isSecret: true,
+                        reason: `Connection string with high-entropy credential (${entropy.toFixed(2)} entropy)`,
+                        confidence: "high",
+                        category: "Connection String",
+                    };
+                }
+            }
+        }
+    }
+
+    // Also check for credentials in query parameters of connection strings
+    const queryParamMatch = value.match(
+        /[?&](password|pwd|pass|token|key|secret|auth|credential)=([^&\s#]+)/i
+    );
+    if (queryParamMatch && queryParamMatch[2]) {
+        const paramValue = queryParamMatch[2];
+
+        // Enhanced placeholder detection for query parameters
+        const queryPlaceholderPatterns = [
+            /^(abc123|test123|demo123|example123|fake123)/i,
+            /secretkey$/i,
+            /^(password|secret|test|demo|example|fake|sample)/i,
+            /123$/i, // ends with 123
+        ];
+
+        const isPlaceholder = queryPlaceholderPatterns.some((p) =>
+            p.test(paramValue)
+        );
+        if (isPlaceholder) {
+            return null;
+        }
+
+        if (paramValue.length >= 8 && !hasVeryLowEntropy(paramValue)) {
+            const entropy = calculateEntropy(paramValue);
+            if (entropy >= 3.5) {
+                // Higher threshold for query params
+                return {
+                    isSecret: true,
+                    reason: `Connection string with high-entropy credential in query parameter`,
+                    confidence: "high",
+                    category: "Connection String",
                 };
             }
         }
@@ -466,7 +563,15 @@ export function isPotentiallyASecret(
         };
     }
 
-    // 1. Check for obvious non-secrets first (fastest check)
+    // 1. Check for URL parameters
+    const urlResult = checkUrlParameters(trimmedValue);
+    if (urlResult) return urlResult;
+
+    // 2. Check connection strings with credentials
+    const connectionResult = checkConnectionStrings(trimmedValue);
+    if (connectionResult) return connectionResult;
+
+    // 3. Check for obvious non-secrets first (fastest check)
     if (checkObviousNonSecrets(trimmedValue)) {
         return {
             isSecret: false,
@@ -475,22 +580,18 @@ export function isPotentiallyASecret(
         };
     }
 
-    // 2. Check for URL parameters
-    const urlResult = checkUrlParameters(trimmedValue);
-    if (urlResult) return urlResult;
-
-    // 3. Check certificates and private keys
+    // 4. Check certificates and private keys
     const certResult = checkCertificatesAndKeys(trimmedValue);
     if (certResult) return certResult;
 
-    // 4. Check known secret patterns
+    // 5. Check known secret patterns
     const knownResult = checkKnownPatterns(trimmedValue);
     if (knownResult) return knownResult;
 
-    // 5. Check for secret context keywords
+    // 6. Check for secret context keywords
     const hasKeyword = hasSecretKeyword(key);
 
-    // 6. High-confidence keyword check
+    // 7. High-confidence keyword check
     if (hasKeyword && length >= 8) {
         // Additional validation for test values
         const testKeywords = [
@@ -520,7 +621,7 @@ export function isPotentiallyASecret(
         };
     }
 
-    // 7. Entropy analysis (only for longer strings to save computation)
+    // 8. Entropy analysis (only for longer strings to save computation)
     if (length >= 12) {
         const entropy = calculateEntropy(trimmedValue);
 
@@ -543,12 +644,22 @@ export function isPotentiallyASecret(
         }
     }
 
-    // 8. Long alphanumeric strings
+    // 9. Long alphanumeric strings
     if (
         length >= 24 &&
         CompiledPatterns.alphanumericPattern.test(trimmedValue) &&
         !/\s/.test(trimmedValue)
     ) {
+        // Check entropy before flagging as secret
+        const entropy = calculateEntropy(trimmedValue);
+        if (entropy < 2.5) {
+            return {
+                isSecret: false,
+                reason: "Low entropy alphanumeric string",
+                confidence: "medium",
+            };
+        }
+
         // Exclude obvious hashes without secret context
         if (
             CompiledPatterns.hexPattern.test(trimmedValue) &&
@@ -570,7 +681,7 @@ export function isPotentiallyASecret(
         };
     }
 
-    // 9. Hex strings
+    // 10. Hex strings
     if (length >= 32 && CompiledPatterns.hexPattern.test(trimmedValue)) {
         const entropy = calculateEntropy(trimmedValue);
         if (entropy < 2.0) {
@@ -592,7 +703,7 @@ export function isPotentiallyASecret(
         }
     }
 
-    // 10. Improved Base64 detection
+    // 11. Improved Base64 detection
     if (length >= 20 && length % 4 === 0) {
         if (isValidBase64(trimmedValue)) {
             const entropy = calculateEntropy(trimmedValue);
@@ -613,7 +724,7 @@ export function isPotentiallyASecret(
         }
     }
 
-    // 11. UUID-like but extended (custom tokens)
+    // 12. UUID-like but extended (custom tokens)
     if (
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}[0-9a-fA-F]+$/.test(
             trimmedValue
@@ -627,7 +738,7 @@ export function isPotentiallyASecret(
         };
     }
 
-    // 12. Mixed complexity with keyword context
+    // 13. Mixed complexity with keyword context
     if (length >= 20 && hasKeyword) {
         const entropy = calculateEntropy(trimmedValue);
         if (entropy >= 3.0) {
@@ -643,7 +754,7 @@ export function isPotentiallyASecret(
         }
     }
 
-    // 13. Known secret prefixes
+    // 14. Known secret prefixes
     const secretPrefixes = [
         {prefix: "sk_", minLength: 16, confidence: "high" as const},
         {prefix: "pk_", minLength: 16, confidence: "medium" as const},
