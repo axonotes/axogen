@@ -1,4 +1,12 @@
 import * as z from "zod";
+import type {
+    CsvTargetOptions,
+    HjsonTargetOptions,
+    IniTargetOptions,
+    PropertiesTargetOptions,
+    XmlTargetOptions,
+    YamlTargetOptions,
+} from "./targets.ts";
 
 const baseTargetSchema = z.object({
     path: z
@@ -19,36 +27,111 @@ const baseTargetSchema = z.object({
     generate_meta: z.boolean().default(false).optional(),
 });
 
-export const envTargetSchema = baseTargetSchema
-    .extend({
-        type: z.literal("env"),
-    })
-    .strict();
-
 export const jsonTargetSchema = baseTargetSchema
     .extend({
         type: z.literal("json"),
-        indent: z.union([z.number(), z.string()]).default(2).optional(),
-    })
-    .strict();
-
-export const yamlTargetSchema = baseTargetSchema
-    .extend({
-        type: z.literal("yaml"),
         options: z
             .object({
-                indent: z.number().optional(),
-                lineWidth: z.number().optional(),
-                noRefs: z.boolean().optional(),
+                replacer: z
+                    .union([
+                        z.array(z.union([z.string(), z.number()])),
+                        z.null(),
+                    ])
+                    .optional(),
+                space: z.union([z.string(), z.number()]).optional(),
             })
             .strict()
             .optional(),
     })
     .strict();
 
+export const json5TargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("json5"),
+        options: z
+            .object({
+                space: z.union([z.string(), z.number(), z.null()]).optional(),
+            })
+            .strict()
+            .optional(),
+    })
+    .strict();
+
+export const jsoncTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("jsonc"),
+        options: z
+            .object({
+                replacer: z
+                    .union([
+                        z.array(z.union([z.string(), z.number()])),
+                        z.null(),
+                    ])
+                    .optional(),
+                space: z.union([z.string(), z.number()]).optional(),
+            })
+            .strict()
+            .optional(),
+    })
+    .strict();
+
+export const hjsonTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("hjson"),
+        options: z.custom<HjsonTargetOptions>().optional(),
+    })
+    .strict();
+
+export const yamlTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("yaml"),
+        options: z.custom<YamlTargetOptions>().optional(),
+    })
+    .strict();
+
 export const tomlTargetSchema = baseTargetSchema
     .extend({
         type: z.literal("toml"),
+    })
+    .strict();
+
+export const iniTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("ini"),
+        options: z.custom<IniTargetOptions>().optional(),
+    })
+    .strict();
+
+export const propertiesTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("properties"),
+        options: z.custom<PropertiesTargetOptions>().optional(),
+    })
+    .strict();
+
+export const envTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("env"),
+    })
+    .strict();
+
+export const xmlTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("xml"),
+        options: z.custom<XmlTargetOptions>().optional(),
+    })
+    .strict();
+
+export const csvTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("csv"),
+        options: z.custom<CsvTargetOptions>().optional(),
+    })
+    .strict();
+
+export const csonTargetSchema = baseTargetSchema
+    .extend({
+        type: z.literal("cson"),
     })
     .strict();
 
@@ -68,10 +151,18 @@ export const templateTargetSchema = baseTargetSchema
 // Union of all target types
 export const targetSchema = z
     .discriminatedUnion("type", [
-        envTargetSchema,
         jsonTargetSchema,
+        json5TargetSchema,
+        jsoncTargetSchema,
+        hjsonTargetSchema,
         yamlTargetSchema,
         tomlTargetSchema,
+        iniTargetSchema,
+        propertiesTargetSchema,
+        envTargetSchema,
+        xmlTargetSchema,
+        csvTargetSchema,
+        csonTargetSchema,
         templateTargetSchema,
     ])
     .check((ctx) => {
@@ -92,10 +183,18 @@ export const targetSchema = z
 
 export const targetsSchema = z.record(z.string(), targetSchema).optional();
 
-export type ZodEnvTarget = z.infer<typeof envTargetSchema>;
 export type ZodJsonTarget = z.infer<typeof jsonTargetSchema>;
+export type ZodJson5Target = z.infer<typeof json5TargetSchema>;
+export type ZodJsoncTarget = z.infer<typeof jsoncTargetSchema>;
+export type ZodHjsonTarget = z.infer<typeof hjsonTargetSchema>;
 export type ZodYamlTarget = z.infer<typeof yamlTargetSchema>;
 export type ZodTomlTarget = z.infer<typeof tomlTargetSchema>;
+export type ZodIniTarget = z.infer<typeof iniTargetSchema>;
+export type ZodPropertiesTarget = z.infer<typeof propertiesTargetSchema>;
+export type ZodEnvTarget = z.infer<typeof envTargetSchema>;
+export type ZodXmlTarget = z.infer<typeof xmlTargetSchema>;
+export type ZodCsvTarget = z.infer<typeof csvTargetSchema>;
+export type ZodCsonTarget = z.infer<typeof csonTargetSchema>;
 export type ZodTemplateTarget = z.infer<typeof templateTargetSchema>;
 
 export type ZodTarget = z.infer<typeof targetSchema>;

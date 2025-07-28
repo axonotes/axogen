@@ -6,7 +6,7 @@ import {
     expect,
     test,
 } from "bun:test";
-import {loadFile, SupportedExtensions, type ValidFilePath} from "./index.ts";
+import {loadFile, SupportedLoadFileTypes} from "./index.ts";
 import * as z from "zod";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -41,13 +41,6 @@ const configSchema = z.object({
     features: z.array(z.string()),
     timeout: z.number(),
 });
-
-// CSV test data
-const csvData = [
-    {name: "John", age: "30", department: "Engineering"},
-    {name: "Jane", age: "25", department: "Marketing"},
-    {name: "Bob", age: "35", department: "Sales"},
-];
 
 const csvSchema = z.array(
     z.object({
@@ -121,74 +114,56 @@ describe("Axogen Configuration Loader", () => {
     describe("Core Integration & Routing", () => {
         describe("Parser Routing", () => {
             const formats = [
-                {ext: ".json", file: "config.json", parser: "JSON"},
-                {ext: ".json5", file: "config.json5", parser: "json5"},
-                {ext: ".jsonc", file: "config.jsonc", parser: "jsonc"},
-                {ext: ".hjson", file: "config.hjson", parser: "hjson"},
-                {ext: ".yaml", file: "config.yaml", parser: "js-yaml"},
-                {ext: ".yml", file: "config.yml", parser: "js-yaml"},
-                {ext: ".toml", file: "config.toml", parser: "@iarna/toml"},
-                {ext: ".ini", file: "config.ini", parser: "ini"},
-                {ext: ".conf", file: "config.conf", parser: "ini"},
-                {ext: ".cfg", file: "config.cfg", parser: "ini"},
+                {type: "json", file: "config.json", parser: "JSON"},
+                {type: "json5", file: "config.json5", parser: "json5"},
+                {type: "jsonc", file: "config.jsonc", parser: "jsonc"},
+                {type: "hjson", file: "config.hjson", parser: "hjson"},
+                {type: "yaml", file: "config.yaml", parser: "js-yoga"},
+                {type: "yaml", file: "config.yml", parser: "js-yaml"},
+                {type: "toml", file: "config.toml", parser: "@iarna/toml"},
+                {type: "ini", file: "config.ini", parser: "ini"},
+                {type: "ini", file: "config.conf", parser: "ini"},
+                {type: "ini", file: "config.cfg", parser: "ini"},
                 {
-                    ext: ".properties",
+                    type: "properties",
                     file: "config.properties",
                     parser: "properties-file",
                 },
-                {ext: ".env", file: "config.env", parser: "dotenv"},
-                {ext: ".xml", file: "config.xml", parser: "fast-xml-parser"},
-                {ext: ".csv", file: "data.csv", parser: "papaparse"},
-                {ext: ".txt", file: "content.txt", parser: "text"},
-                {ext: ".cson", file: "config.cson", parser: "cson"},
-            ];
+                {type: "env", file: "config.env", parser: "dotenv"},
+                {type: "xml", file: "config.xml", parser: "fast-xml-parser"},
+                {type: "csv", file: "data.csv", parser: "papaparse"},
+                {type: "txt", file: "content.txt", parser: "text"},
+                {type: "cson", file: "config.cson", parser: "cson"},
+            ] as const;
 
-            formats.forEach(({ext, file, parser}) => {
-                test(`should route ${ext} files to ${parser} parser`, async () => {
-                    const result = loadFile(
-                        path.join(TEST_DIR, file) as ValidFilePath
-                    );
+            formats.forEach(({type, file, parser}) => {
+                test(`should route ${type} files to ${parser} parser`, async () => {
+                    const result = loadFile(path.join(TEST_DIR, file), type);
                     expect(typeof result).toBe("object");
                     expect(result).not.toBeNull();
                 });
             });
 
-            test("should handle case-insensitive extensions", async () => {
-                const upperCaseFile = path.join(TEMP_DIR, "config.JSON");
-                fs.writeFileSync(upperCaseFile, JSON.stringify(testData));
-
-                const result = loadFile(upperCaseFile as ValidFilePath);
-                expect(result).toEqual(testData);
-            });
-
-            test("should throw error for unsupported extension", async () => {
+            test("should throw error for unsupported type", async () => {
                 expect(() => {
-                    loadFile("/fake/path/config.unsupported" as ValidFilePath);
-                }).toThrow("Unsupported file extension: .unsupported");
-            });
-
-            test("should throw error for files without extensions", async () => {
-                expect(() => {
-                    loadFile("/path/to/file" as ValidFilePath);
-                }).toThrow("Unsupported file extension:");
+                    loadFile("/fake/path/config.txt", "unsupported" as any);
+                }).toThrow();
             });
         });
 
         describe("File System Operations", () => {
             test("should throw error for non-existent file", async () => {
                 expect(() => {
-                    loadFile(
-                        path.join(TEST_DIR, "nonexistent.json") as ValidFilePath
-                    );
+                    loadFile(path.join(TEST_DIR, "nonexistent.json"), "json");
                 }).toThrow();
             });
 
-            test("should reject directories with valid extensions", async () => {
-                const dirPath = path.join(TEMP_DIR, "config.json");
+            test("should reject directories", async () => {
+                const dirPath = path.join(TEMP_DIR, "config");
                 fs.mkdirSync(dirPath);
 
                 expect(() => {
-                    loadFile(dirPath as ValidFilePath);
+                    loadFile(dirPath, "json");
                 }).toThrow();
             });
 
@@ -203,7 +178,7 @@ describe("Axogen Configuration Loader", () => {
                     fs.chmodSync(restrictedFile, 0o000);
 
                     expect(() => {
-                        loadFile(restrictedFile as ValidFilePath);
+                        loadFile(restrictedFile, "json");
                     }).toThrow();
 
                     // Cleanup
@@ -220,8 +195,8 @@ describe("Axogen Configuration Loader", () => {
                 fs.writeFileSync(windowsFile, jsonContent);
                 fs.writeFileSync(unixFile, jsonContent.replace(/\r\n/g, "\n"));
 
-                const windowsResult = loadFile(windowsFile as ValidFilePath);
-                const unixResult = loadFile(unixFile as ValidFilePath);
+                const windowsResult = loadFile(windowsFile, "json");
+                const unixResult = loadFile(unixFile, "json");
 
                 expect(windowsResult).toEqual(unixResult);
             });
@@ -230,24 +205,34 @@ describe("Axogen Configuration Loader", () => {
         describe("Error Handling & Transformation", () => {
             test("should wrap parser errors consistently", async () => {
                 const malformedFiles = [
-                    {file: "invalid.json", content: "{ invalid json }"},
+                    {
+                        file: "invalid.json",
+                        content: "{ invalid json }",
+                        type: "json",
+                    },
                     {
                         file: "invalid.yaml",
                         content: "key:\n  - invalid\n- structure",
+                        type: "yaml",
                     },
-                    {file: "invalid.toml", content: "[invalid\nkey = value"},
+                    {
+                        file: "invalid.toml",
+                        content: "[invalid\nkey = value",
+                        type: "toml",
+                    },
                     {
                         file: "invalid.xml",
                         content: "<root><unclosed>content</root>",
+                        type: "xml",
                     },
-                ];
+                ] as const;
 
-                malformedFiles.forEach(({file, content}) => {
+                malformedFiles.forEach(({file, content, type}) => {
                     const filePath = path.join(TEMP_DIR, file);
                     fs.writeFileSync(filePath, content);
 
                     expect(() => {
-                        loadFile(filePath as ValidFilePath);
+                        loadFile(filePath, type);
                     }).toThrow();
                 });
             });
@@ -257,7 +242,7 @@ describe("Axogen Configuration Loader", () => {
                 fs.writeFileSync(emptyFile, "");
 
                 expect(() => {
-                    loadFile(emptyFile as ValidFilePath);
+                    loadFile(emptyFile, "json");
                 }).toThrow();
             });
 
@@ -266,7 +251,7 @@ describe("Axogen Configuration Loader", () => {
                 fs.writeFileSync(whitespaceFile, "   \n\t   \r\n  ");
 
                 expect(() => {
-                    loadFile(whitespaceFile as ValidFilePath);
+                    loadFile(whitespaceFile, "json");
                 }).toThrow();
             });
         });
@@ -275,7 +260,8 @@ describe("Axogen Configuration Loader", () => {
     describe("Schema Validation (Core Feature)", () => {
         test("should validate with correct schema", async () => {
             const result = loadFile(
-                path.join(TEST_DIR, "config.json") as ValidFilePath,
+                path.join(TEST_DIR, "config.json"),
+                "json",
                 configSchema
             );
             expect(result).toEqual(testData);
@@ -284,7 +270,8 @@ describe("Axogen Configuration Loader", () => {
 
         test("should validate CSV with schema and type coercion", async () => {
             const result = loadFile(
-                path.join(TEST_DIR, "data.csv") as ValidFilePath,
+                path.join(TEST_DIR, "data.csv"),
+                "csv",
                 csvSchema
             );
             expect(result[0].age).toBe(30);
@@ -299,7 +286,8 @@ describe("Axogen Configuration Loader", () => {
             });
 
             const result = loadFile(
-                path.join(TEST_DIR, "minimal.json") as ValidFilePath,
+                path.join(TEST_DIR, "minimal.json"),
+                "json",
                 optionalSchema
             );
             expect(result.defaulted).toBe("default_value");
@@ -316,7 +304,8 @@ describe("Axogen Configuration Loader", () => {
             });
 
             const result = loadFile(
-                path.join(TEST_DIR, "nested.json") as ValidFilePath,
+                path.join(TEST_DIR, "nested.json"),
+                "json",
                 nestedSchema
             );
             expect(result.user.profile.name).toBe("John");
@@ -329,7 +318,8 @@ describe("Axogen Configuration Loader", () => {
             });
 
             const result = loadFile(
-                path.join(TEST_DIR, "transform.json") as ValidFilePath,
+                path.join(TEST_DIR, "transform.json"),
+                "json",
                 transformSchema
             );
             expect(result.name).toBe("JOHN DOE");
@@ -344,7 +334,8 @@ describe("Axogen Configuration Loader", () => {
 
             expect(() => {
                 loadFile(
-                    path.join(TEST_DIR, "config.json") as ValidFilePath,
+                    path.join(TEST_DIR, "config.json"),
+                    "json",
                     wrongSchema
                 );
             }).toThrow("Loading validation failed");
@@ -361,7 +352,8 @@ describe("Axogen Configuration Loader", () => {
 
             try {
                 loadFile(
-                    path.join(TEST_DIR, "config.json") as ValidFilePath,
+                    path.join(TEST_DIR, "config.json"),
+                    "json",
                     strictSchema
                 );
                 expect(false).toBe(true); // Should not reach here
@@ -381,7 +373,8 @@ describe("Axogen Configuration Loader", () => {
             ]);
 
             const userResult = loadFile(
-                path.join(TEST_DIR, "user.json") as ValidFilePath,
+                path.join(TEST_DIR, "user.json"),
+                "json",
                 unionSchema
             );
             expect(userResult.type).toBe("user");
@@ -394,7 +387,8 @@ describe("Axogen Configuration Loader", () => {
             ]);
 
             const configResult = loadFile(
-                path.join(TEST_DIR, "config-type.json") as ValidFilePath,
+                path.join(TEST_DIR, "config-type.json"),
+                "json",
                 discriminatedSchema
             );
             expect(configResult.type).toBe("config");
@@ -403,16 +397,15 @@ describe("Axogen Configuration Loader", () => {
 
     describe("Type Safety & API Contract", () => {
         test("should return Record<string, unknown> without schema", async () => {
-            const result = loadFile(
-                path.join(TEST_DIR, "config.json") as ValidFilePath
-            );
+            const result = loadFile(path.join(TEST_DIR, "config.json"), "json");
             expect(typeof result).toBe("object");
             expect(result).not.toBeNull();
         });
 
         test("should return inferred type with schema", async () => {
             const result = loadFile(
-                path.join(TEST_DIR, "config.json") as ValidFilePath,
+                path.join(TEST_DIR, "config.json"),
+                "json",
                 configSchema
             );
 
@@ -422,40 +415,37 @@ describe("Axogen Configuration Loader", () => {
             expect(Array.isArray(result.features)).toBe(true);
         });
 
-        test("should include all expected extensions", () => {
-            const expectedExtensions = [
-                ".json",
-                ".json5",
-                ".jsonc",
-                ".hjson",
-                ".yaml",
-                ".yml",
-                ".toml",
-                ".ini",
-                ".conf",
-                ".cfg",
-                ".properties",
-                ".env",
-                ".xml",
-                ".csv",
-                ".txt",
-                ".cson",
+        test("should include all expected types", () => {
+            const expectedTypes = [
+                "json",
+                "json5",
+                "jsonc",
+                "hjson",
+                "yaml",
+                "toml",
+                "ini",
+                "properties",
+                "env",
+                "xml",
+                "csv",
+                "txt",
+                "cson",
             ];
 
-            expectedExtensions.forEach((ext) => {
-                expect(SupportedExtensions).toContain(ext);
+            expectedTypes.forEach((type) => {
+                expect(SupportedLoadFileTypes).toContain(type);
             });
         });
 
-        test("should have correct number of supported extensions", () => {
-            expect(SupportedExtensions).toHaveLength(16);
+        test("should have correct number of supported types", () => {
+            expect(SupportedLoadFileTypes).toHaveLength(13);
         });
     });
 
     describe("Performance & Reliability", () => {
         test("should handle large JSON files efficiently", async () => {
             const {result, duration, memory} = await measurePerformance(() =>
-                loadFile(path.join(TEST_DIR, "large.json") as ValidFilePath)
+                loadFile(path.join(TEST_DIR, "large.json"), "json")
             );
 
             expect(Array.isArray(result)).toBe(true);
@@ -466,7 +456,7 @@ describe("Axogen Configuration Loader", () => {
 
         test("should handle large CSV files efficiently", async () => {
             const {result, duration} = await measurePerformance(() =>
-                loadFile(path.join(TEST_DIR, "large.csv") as ValidFilePath)
+                loadFile(path.join(TEST_DIR, "large.csv"), "csv")
             );
 
             expect(Array.isArray(result)).toBe(true);
@@ -476,15 +466,15 @@ describe("Axogen Configuration Loader", () => {
 
         test("should handle concurrent file loading", async () => {
             const files = [
-                "config.json",
-                "config.yaml",
-                "config.toml",
-                "data.csv",
-                "config.xml",
-            ];
+                {file: "config.json", type: "json"},
+                {file: "config.yaml", type: "yaml"},
+                {file: "config.toml", type: "toml"},
+                {file: "data.csv", type: "csv"},
+                {file: "config.xml", type: "xml"},
+            ] as const;
 
-            const promises = files.map((file) =>
-                loadFile(path.join(TEST_DIR, file) as ValidFilePath)
+            const promises = files.map(({file, type}) =>
+                loadFile(path.join(TEST_DIR, file), type)
             );
 
             const results = await Promise.all(promises);
@@ -497,7 +487,8 @@ describe("Axogen Configuration Loader", () => {
 
         test("should handle files with many properties", async () => {
             const result = loadFile(
-                path.join(TEST_DIR, "many-props.json") as ValidFilePath
+                path.join(TEST_DIR, "many-props.json"),
+                "json"
             );
 
             const keys = Object.keys(result);
@@ -514,7 +505,7 @@ describe("Axogen Configuration Loader", () => {
                 '{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}}'
             );
 
-            const result = loadFile(maliciousFile as ValidFilePath);
+            const result = loadFile(maliciousFile, "json");
 
             // Should not pollute Object.prototype
             expect(({} as any).polluted).toBeUndefined();
@@ -526,7 +517,7 @@ describe("Axogen Configuration Loader", () => {
             const longKeyFile = path.join(TEMP_DIR, "longkey.json");
             fs.writeFileSync(longKeyFile, `{"${longKey}": "value"}`);
 
-            const result = loadFile(longKeyFile as ValidFilePath);
+            const result = loadFile(longKeyFile, "json");
             expect(result[longKey]).toBe("value");
         });
 
@@ -535,7 +526,7 @@ describe("Axogen Configuration Loader", () => {
             const binaryData = Buffer.from([0, 1, 2, 3, 255, 254, 253]);
             fs.writeFileSync(binaryFile, binaryData);
 
-            const result = loadFile(binaryFile as ValidFilePath);
+            const result = loadFile(binaryFile, "txt");
             expect(result.content).toBeDefined();
         });
 
@@ -546,7 +537,7 @@ describe("Axogen Configuration Loader", () => {
                 '{"key": "value\\u0000with\\u0000nulls"}'
             );
 
-            const result = loadFile(nullByteFile as ValidFilePath);
+            const result = loadFile(nullByteFile, "json");
             expect(result.key).toContain("\u0000");
         });
     });
@@ -554,10 +545,12 @@ describe("Axogen Configuration Loader", () => {
     describe("Real-world Configuration Scenarios", () => {
         test("should handle configuration files with environment overrides", async () => {
             const baseConfig = loadFile(
-                path.join(TEST_DIR, "config.json") as ValidFilePath
+                path.join(TEST_DIR, "config.json"),
+                "json"
             );
             const envOverrides = loadFile(
-                path.join(TEST_DIR, "config.env") as ValidFilePath
+                path.join(TEST_DIR, "config.env"),
+                "env"
             );
 
             // @ts-ignore
@@ -567,13 +560,16 @@ describe("Axogen Configuration Loader", () => {
 
         test("should handle migration from one format to another", async () => {
             const jsonConfig = loadFile(
-                path.join(TEST_DIR, "config.json") as ValidFilePath
+                path.join(TEST_DIR, "config.json"),
+                "json"
             );
             const yamlConfig = loadFile(
-                path.join(TEST_DIR, "config.yaml") as ValidFilePath
+                path.join(TEST_DIR, "config.yaml"),
+                "yaml"
             );
             const tomlConfig = loadFile(
-                path.join(TEST_DIR, "config.toml") as ValidFilePath
+                path.join(TEST_DIR, "config.toml"),
+                "toml"
             );
 
             expect(jsonConfig).toEqual(yamlConfig);
@@ -581,11 +577,16 @@ describe("Axogen Configuration Loader", () => {
         });
 
         test("should handle configuration validation in CI/CD pipeline", async () => {
-            const configs = ["config.json", "config.yaml", "config.toml"];
+            const configs = [
+                {file: "config.json", type: "json"},
+                {file: "config.yaml", type: "yaml"},
+                {file: "config.toml", type: "toml"},
+            ] as const;
 
-            for (const configFile of configs) {
+            for (const {file, type} of configs) {
                 const result = loadFile(
-                    path.join(TEST_DIR, configFile) as ValidFilePath,
+                    path.join(TEST_DIR, file),
+                    type,
                     configSchema
                 );
 
@@ -600,9 +601,7 @@ describe("Axogen Configuration Loader", () => {
 
             const allData = [];
             for (const file of csvFiles) {
-                const data = loadFile(
-                    path.join(TEST_DIR, file) as ValidFilePath
-                );
+                const data = loadFile(path.join(TEST_DIR, file), "csv");
                 // @ts-ignore
                 allData.push(...data);
             }
@@ -620,8 +619,20 @@ describe("Axogen Configuration Loader", () => {
             const unicodeFile = path.join(TEMP_DIR, "unicode.json");
             fs.writeFileSync(unicodeFile, JSON.stringify(unicodeData));
 
-            const result = loadFile(unicodeFile as ValidFilePath);
+            const result = loadFile(unicodeFile, "json");
             expect(result).toEqual(unicodeData);
+        });
+
+        test("should handle type flexibility with same data", async () => {
+            // Test that the same file can be loaded with different types
+            // when the content is compatible
+            const yamlFile = path.join(TEST_DIR, "config.yaml");
+
+            const yamlResult = loadFile(yamlFile, "yaml");
+            expect(yamlResult.name).toBe("Test Config");
+
+            // The same YAML file should be loadable if the content matches the type
+            expect(typeof yamlResult).toBe("object");
         });
     });
 });

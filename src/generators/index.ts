@@ -1,14 +1,32 @@
 import {writeFile, mkdir} from "node:fs/promises";
 import {dirname, resolve} from "node:path";
-import {EnvGenerator} from "./env";
-import {JsonGenerator} from "./json";
-import {YamlGenerator} from "./yaml";
-import {TomlGenerator} from "./toml";
-import {TemplateGenerator} from "./template";
+import {
+    EnvGenerator,
+    JsonGenerator,
+    YamlGenerator,
+    TomlGenerator,
+    TemplateGenerator,
+    Json5Generator,
+    HjsonGenerator,
+    IniGenerator,
+    PropertiesGenerator,
+    XmlGenerator,
+    CsvGenerator,
+    CsonGenerator,
+} from "./generatorTypes";
 import {hasSecrets, unwrapUnsafe} from "../utils/secrets.ts";
 import {pretty} from "../utils/pretty.ts";
 import {isGitIgnored} from "../git/ignore-checker.ts";
-import type {ZodTarget} from "../config/types";
+import {type ZodTarget} from "../config/types";
+import {createHeaderComments, createMetadata} from "./metadata.ts";
+
+export {
+    EnvGenerator,
+    JsonGenerator,
+    YamlGenerator,
+    TomlGenerator,
+    TemplateGenerator,
+};
 
 export interface GenerateOptions {
     /** Show what would be generated without writing files */
@@ -20,8 +38,15 @@ export interface GenerateOptions {
 export class TargetGenerator {
     private envGenerator = new EnvGenerator();
     private jsonGenerator = new JsonGenerator();
+    private json5Generator = new Json5Generator();
+    private hjsonGenerator = new HjsonGenerator();
     private yamlGenerator = new YamlGenerator();
     private tomlGenerator = new TomlGenerator();
+    private iniGenerator = new IniGenerator();
+    private propertiesGenerator = new PropertiesGenerator();
+    private xmlGenerator = new XmlGenerator();
+    private csvGenerator = new CsvGenerator();
+    private csonGenerator = new CsonGenerator();
     private templateGenerator = new TemplateGenerator();
 
     private isSafe(
@@ -29,38 +54,49 @@ export class TargetGenerator {
         targetName: string,
         fullPath: string
     ): ZodTarget {
-        const secretsAnalysisResult = hasSecrets(target.variables, targetName);
-        if (secretsAnalysisResult.hasSecrets) {
-            let isIgnored = false;
+        const secretsAnalysis = hasSecrets(target.variables, targetName);
 
-            try {
-                // Check if the target is ignored by git
-                isIgnored = isGitIgnored(fullPath);
-            } catch (e) {
-                const message = e instanceof Error ? e.message : String(e);
-                pretty.warn(
-                    `Failed to check if target is ignored by git: ${message}`
-                );
-            }
-
-            if (!isIgnored) {
-                pretty.secrets.detected(
-                    `Target "${targetName}" contains secrets and cannot be generated!`,
-                    secretsAnalysisResult
-                );
-
-                console.log();
-                pretty.info(
-                    "To resolve this, add the target to your .gitignore file or remove the secrets from the target configuration."
-                );
-
-                throw new Error(`Target "${targetName}" contains secrets`);
-            }
+        // Early return if no secrets detected
+        if (!secretsAnalysis.hasSecrets) {
+            target.variables = unwrapUnsafe(target.variables);
+            return target;
         }
 
-        // Unwrap unsafe objects
+        // Check git ignore status
+        const isIgnored = this.checkGitIgnoreStatus(fullPath, targetName);
+
+        if (!isIgnored) {
+            pretty.secrets.detected(
+                `Target "${targetName}" contains secrets and cannot be generated!`,
+                secretsAnalysis
+            );
+
+            console.log();
+            pretty.info(
+                "To resolve this, add the target to your .gitignore file or remove the secrets from the target configuration."
+            );
+
+            throw new Error(`Target "${targetName}" contains secrets`);
+        }
+
         target.variables = unwrapUnsafe(target.variables);
         return target;
+    }
+
+    private checkGitIgnoreStatus(
+        fullPath: string,
+        targetName: string
+    ): boolean {
+        try {
+            return isGitIgnored(fullPath);
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : String(error);
+            pretty.warn(
+                `Failed to check git ignore status for "${targetName}": ${message}`
+            );
+            return false; // Assume not ignored if check fails
+        }
     }
 
     /** Generate content for a target */
@@ -78,38 +114,143 @@ export class TargetGenerator {
         target = this.isSafe(target, targetName, fullPath);
 
         try {
-            // Generate content based on target type
-            let content: string;
+            if (target.type === "csv") {
+                target.generate_meta = false; // CSV does not support metadata
+            }
 
-            switch (target.type) {
-                case "env":
-                    content = this.envGenerator.generate(target);
-                    break;
-                case "json":
-                    content = this.jsonGenerator.generate(target);
-                    break;
-                case "yaml":
-                    content = this.yamlGenerator.generate(target);
-                    break;
-                case "toml":
-                    content = this.tomlGenerator.generate(target);
-                    break;
-                case "template":
-                    content = await this.templateGenerator.generate(target);
-                    break;
-                default:
-                    throw new Error(
-                        `Unsupported target type: ${(target as any).type}`
-                    );
+            // Process variables and add metadata if needed
+            const processedVariables = target.generate_meta
+                ? {
+                      _meta: createMetadata(target.path, target.type),
+                      ...target.variables,
+                  }
+                : target.variables;
+
+            // Generate content based on target type
+            let content = await this.generateContent(
+                processedVariables,
+                target,
+                baseDir
+            );
+
+            // Add header comments for formats that support them
+            const headerComment = this.getCommentHeader(target);
+            if (headerComment) {
+                content = headerComment + "\n\n" + content;
             }
 
             return {path: fullPath, content};
         } catch (error) {
             throw new Error(
-                `Failed to generate target "${targetName}": ${
-                    error instanceof Error ? error.message : String(error)
-                }`
+                `Failed to generate target "${targetName}": ${error instanceof Error ? error.message : String(error)}`
             );
+        }
+    }
+
+    private async generateContent(
+        variables: Record<string, any>,
+        target: ZodTarget,
+        baseDir: string
+    ): Promise<string> {
+        switch (target.type) {
+            case "json":
+                return this.jsonGenerator.generate(variables, target.options);
+            case "json5":
+                return this.json5Generator.generate(variables, target.options);
+            case "jsonc":
+                return this.jsonGenerator.generate(variables, target.options);
+            case "hjson":
+                return this.hjsonGenerator.generate(variables, target.options);
+            case "yaml":
+                return this.yamlGenerator.generate(variables, target.options);
+            case "toml":
+                return this.tomlGenerator.generate(variables);
+            case "ini":
+                return this.iniGenerator.generate(variables, target.options);
+            case "properties":
+                return this.propertiesGenerator.generate(
+                    variables,
+                    target.options
+                );
+            case "env":
+                return this.envGenerator.generate(variables);
+            case "xml":
+                return this.xmlGenerator.generate(variables, target.options);
+            case "csv":
+                if (!("csv" in variables)) {
+                    throw new Error(
+                        `CSV target "${target.path}" requires a "csv" variable: \n${JSON.stringify(
+                            {
+                                csv: [
+                                    "header1,header2,header3",
+                                    "value1,value2,value3",
+                                ],
+                            },
+                            null,
+                            2
+                        )}`
+                    );
+                }
+                return this.csvGenerator.generate(
+                    variables.csv,
+                    target.options
+                );
+            case "cson":
+                return this.csonGenerator.generate(variables);
+            case "template":
+                return await this.templateGenerator.generate(target, baseDir);
+            default:
+                throw new Error(
+                    `Unsupported target type: ${(target as any).type}`
+                );
+        }
+    }
+
+    private getCommentHeader(target: ZodTarget): string {
+        switch (target.type) {
+            case "json":
+                return "";
+            case "json5":
+                return createHeaderComments(target.path, "json5", "//").join(
+                    "\n"
+                );
+            case "jsonc":
+                return createHeaderComments(target.path, "jsonc", "//").join(
+                    "\n"
+                );
+            case "hjson":
+                return createHeaderComments(target.path, "hjson").join("\n");
+            case "yaml":
+                return createHeaderComments(target.path, "yaml").join("\n");
+            case "toml":
+                return createHeaderComments(target.path, "toml").join("\n");
+            case "ini":
+                return createHeaderComments(target.path, "ini", ";").join("\n");
+            case "properties":
+                return createHeaderComments(
+                    target.path,
+                    "properties",
+                    "#"
+                ).join("\n");
+            case "env":
+                return createHeaderComments(target.path, "env").join("\n");
+            case "xml":
+                return createHeaderComments(
+                    target.path,
+                    "xml",
+                    "<!--",
+                    "-->"
+                ).join("\n");
+            case "csv":
+                return "";
+            case "cson":
+                return createHeaderComments(target.path, "cson", "#").join(
+                    "\n"
+                );
+            case "template":
+                return "";
+            default:
+                return "";
         }
     }
 
@@ -128,10 +269,7 @@ export class TargetGenerator {
         );
 
         if (!dryRun) {
-            // Ensure directory exists
             await mkdir(dirname(path), {recursive: true});
-
-            // Write file
             await writeFile(path, content, "utf-8");
         }
 
@@ -171,13 +309,6 @@ export class TargetGenerator {
         return results;
     }
 }
-
-// Export generators for direct use
-export {EnvGenerator} from "./env.js";
-export {JsonGenerator} from "./json.js";
-export {YamlGenerator} from "./yaml.js";
-export {TomlGenerator} from "./toml.js";
-export {TemplateGenerator} from "./template.js";
 
 // Export default instance
 export const targetGenerator = new TargetGenerator();
