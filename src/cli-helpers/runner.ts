@@ -1,17 +1,18 @@
 import {liveExec} from "./";
 import type {
-    AnyCommand,
-    StringCommand,
-    FunctionCommand,
-    CommandGroup,
     CommandGlobalContext,
     SimpleCommandContext,
-    AxogenConfig,
-} from "../types";
+    StringCommand,
+    ZodAnyCommand,
+    ZodAxogenConfig,
+    ZodCommandGroup,
+    ZodFunctionCommand,
+    ZodStringCommand,
+} from "../config/types";
 import {pretty} from "../utils/pretty";
 
 export interface RunCommandOptions {
-    config: AxogenConfig;
+    config: ZodAxogenConfig;
     global: CommandGlobalContext;
     args?: string[];
     options?: Record<string, any>;
@@ -25,7 +26,7 @@ export interface CommandResult {
 
 export class CommandRunner {
     async executeCommand(
-        command: AnyCommand,
+        command: ZodAnyCommand,
         options: RunCommandOptions
     ): Promise<CommandResult> {
         try {
@@ -198,7 +199,7 @@ export class CommandRunner {
     }
 
     private async executeCommandGroup(
-        group: CommandGroup,
+        group: ZodCommandGroup,
         options: RunCommandOptions
     ): Promise<CommandResult> {
         const [subcommandName, ...remainingArgs] = options.args || [];
@@ -246,7 +247,7 @@ export class CommandRunner {
         });
     }
 
-    private getCommandHelp(command: AnyCommand): string | undefined {
+    private getCommandHelp(command: ZodAnyCommand): string | undefined {
         if (
             typeof command === "string" ||
             typeof command === "function" ||
@@ -257,15 +258,15 @@ export class CommandRunner {
         return command.help;
     }
 
-    private isStringCommand(command: any): command is StringCommand {
+    private isStringCommand(command: any): command is ZodStringCommand {
         return command && command._type === "string";
     }
 
-    private isFunctionCommand(command: any): command is FunctionCommand {
+    private isFunctionCommand(command: any): command is ZodFunctionCommand {
         return command && command._type === "function";
     }
 
-    private isCommandGroup(command: any): command is CommandGroup {
+    private isCommandGroup(command: any): command is ZodCommandGroup {
         return command && command._type === "group";
     }
 }

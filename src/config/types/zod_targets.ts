@@ -1,10 +1,11 @@
 import * as z from "zod";
 
-// Base schemas
 const baseTargetSchema = z.object({
-    path: z.string({
-        message: "Target path must be a string",
-    }),
+    path: z
+        .string({
+            error: "Target path must be a string",
+        })
+        .describe("Target file path"),
     schema: z
         .custom<z.ZodType>((val) => {
             return (
@@ -18,7 +19,6 @@ const baseTargetSchema = z.object({
     generate_meta: z.boolean().default(false).optional(),
 });
 
-// Target schemas - with strict validation
 export const envTargetSchema = baseTargetSchema
     .extend({
         type: z.literal("env"),
@@ -89,3 +89,14 @@ export const targetSchema = z
             }
         }
     });
+
+export const targetsSchema = z.record(z.string(), targetSchema).optional();
+
+export type ZodEnvTarget = z.infer<typeof envTargetSchema>;
+export type ZodJsonTarget = z.infer<typeof jsonTargetSchema>;
+export type ZodYamlTarget = z.infer<typeof yamlTargetSchema>;
+export type ZodTomlTarget = z.infer<typeof tomlTargetSchema>;
+export type ZodTemplateTarget = z.infer<typeof templateTargetSchema>;
+
+export type ZodTarget = z.infer<typeof targetSchema>;
+export type ZodTargets = z.infer<typeof targetsSchema>;

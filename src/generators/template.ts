@@ -2,7 +2,7 @@ import {readFile} from "node:fs/promises";
 import * as nunjucks from "nunjucks";
 import Handlebars from "handlebars";
 import * as Mustache from "mustache";
-import type {TemplateTarget} from "../types";
+import type {ZodTemplateTarget} from "../config/types";
 
 export class TemplateGenerator {
     private nunjucksEnv: nunjucks.Environment;
@@ -25,7 +25,7 @@ export class TemplateGenerator {
     }
 
     /** Generate file content from template */
-    async generate(target: TemplateTarget): Promise<string> {
+    async generate(target: ZodTemplateTarget): Promise<string> {
         try {
             // Read template file
             const templateContent = await readFile(target.template, "utf-8");
@@ -84,7 +84,7 @@ export class TemplateGenerator {
     }
 
     /** Add template context with metadata */
-    private addTemplateContext(variables: any, target: TemplateTarget): any {
+    private addTemplateContext(variables: any, target: ZodTemplateTarget): any {
         return {
             // Metadata available in templates
             _meta: {

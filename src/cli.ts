@@ -1,12 +1,12 @@
 import {Command} from "commander";
 import {getVersion} from "./version";
-import {loadConfig} from "./core/config";
+import {loadConfig} from "./config/loader.ts";
 import {buildDynamicCommands} from "./cli-helpers/builder";
 import {createGenerateCommand} from "./cli-helpers/commands/generate";
 import {createThemeCommand} from "./cli-helpers/commands/theme";
 import {pretty, configurePretty, LogLevel, setTheme} from "./utils/pretty";
 import {themes, type ThemeName} from "./utils/themes";
-import type {AxogenConfig} from "./types";
+import type {ZodAxogenConfig} from "./config/types";
 
 async function createCLI(): Promise<Command> {
     const cli = new Command();
@@ -55,7 +55,7 @@ async function createCLI(): Promise<Command> {
     });
 
     // Load config once
-    let config: AxogenConfig;
+    let config: ZodAxogenConfig;
     try {
         config = await loadConfig();
     } catch (error) {

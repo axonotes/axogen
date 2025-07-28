@@ -1,6 +1,5 @@
 import {writeFile, mkdir} from "node:fs/promises";
 import {dirname, resolve} from "node:path";
-import type {Target} from "../types";
 import {EnvGenerator} from "./env";
 import {JsonGenerator} from "./json";
 import {YamlGenerator} from "./yaml";
@@ -9,6 +8,7 @@ import {TemplateGenerator} from "./template";
 import {hasSecrets, unwrapUnsafe} from "../utils/secrets.ts";
 import {pretty} from "../utils/pretty.ts";
 import {isGitIgnored} from "../git/ignore-checker.ts";
+import type {ZodTarget} from "../config/types";
 
 export interface GenerateOptions {
     /** Show what would be generated without writing files */
@@ -24,18 +24,11 @@ export class TargetGenerator {
     private tomlGenerator = new TomlGenerator();
     private templateGenerator = new TemplateGenerator();
 
-    /** Generate content for a target */
-    async generate(
+    private isSafe(
+        target: ZodTarget,
         targetName: string,
-        target: Target,
-        options: GenerateOptions = {}
-    ): Promise<{path: string; content: string}> {
-        const {baseDir = process.cwd()} = options;
-
-        // Resolve full path
-        const fullPath = resolve(baseDir, target.path);
-
-        // Check if the target has secrets
+        fullPath: string
+    ): ZodTarget {
         const secretsAnalysisResult = hasSecrets(target.variables, targetName);
         if (secretsAnalysisResult.hasSecrets) {
             let isIgnored = false;
@@ -67,6 +60,22 @@ export class TargetGenerator {
 
         // Unwrap unsafe objects
         target.variables = unwrapUnsafe(target.variables);
+        return target;
+    }
+
+    /** Generate content for a target */
+    async generate(
+        targetName: string,
+        target: ZodTarget,
+        options: GenerateOptions = {}
+    ): Promise<{path: string; content: string}> {
+        const {baseDir = process.cwd()} = options;
+
+        // Resolve full path
+        const fullPath = resolve(baseDir, target.path);
+
+        // Check if the target has secrets
+        target = this.isSafe(target, targetName, fullPath);
 
         try {
             // Generate content based on target type
@@ -107,7 +116,7 @@ export class TargetGenerator {
     /** Generate and write target to file */
     async generateAndWrite(
         targetName: string,
-        target: Target,
+        target: ZodTarget,
         options: GenerateOptions = {}
     ): Promise<string> {
         const {dryRun = false} = options;
@@ -131,7 +140,7 @@ export class TargetGenerator {
 
     /** Generate multiple targets */
     async generateMultiple(
-        targets: Record<string, Target>,
+        targets: Record<string, ZodTarget>,
         options: GenerateOptions = {}
     ): Promise<
         Array<{name: string; path: string; success: boolean; error?: string}>

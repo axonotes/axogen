@@ -1,9 +1,9 @@
 import {Command} from "commander";
-import type {AxogenConfig} from "../../types";
+import type {ZodAxogenConfig} from "../../config/types";
 import {targetGenerator} from "../../generators";
 import {pretty} from "../../utils/pretty";
 
-export function createGenerateCommand(config: AxogenConfig): Command {
+export function createGenerateCommand(config: ZodAxogenConfig): Command {
     return new Command("generate")
         .alias("gen")
         .description("Generate configuration files from targets")

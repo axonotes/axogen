@@ -1,15 +1,19 @@
 import {resolve, join} from "node:path";
 import {access, constants} from "node:fs/promises";
 import {z} from "zod";
-import {type AxogenConfig, type ConfigInput, normalizeConfig} from "../types";
-import {axogenConfigSchema} from "../types";
 import {createJiti} from "jiti";
 import {pretty} from "../utils/pretty";
 import {zodIssuesToErrors} from "../utils/helpers.ts";
+import {
+    type AxogenConfig,
+    axogenConfigSchema,
+    type ConfigInput,
+    type ZodAxogenConfig,
+} from "./types";
 
 export class ConfigLoader {
     /** Load configuration from a file */
-    async load(configPath?: string): Promise<AxogenConfig> {
+    async load(configPath?: string): Promise<ZodAxogenConfig> {
         const resolvedPath = await this.resolveConfigPath(configPath);
 
         try {
@@ -18,18 +22,48 @@ export class ConfigLoader {
             if (resolvedPath.endsWith(".ts")) {
                 // Use jiti for TypeScript files
                 const jiti = await this.createJitiLoader();
-                configInput = jiti(resolvedPath).default;
+                configInput = await jiti.import(resolvedPath, {default: true});
             } else {
                 // Use dynamic import for JS files
                 const module = await import(resolvedPath);
                 configInput = module.default;
             }
 
-            // Resolve config (handle both direct config and function)
-            const config = await this.resolveConfig(configInput);
+            if (!configInput || typeof configInput !== "object") {
+                throw new Error(
+                    `Config file at ${pretty.text.accent(resolvedPath)} must export a default object`
+                );
+            }
+
+            if (
+                "_type" in configInput &&
+                configInput._type === "AxogenConfig"
+            ) {
+                // If the config is already in AxogenConfig format, return it directly
+                return configInput as ZodAxogenConfig;
+            }
+
+            const axogenKeys = ["watch", "targets", "commands"];
+            const inputKeys = Object.keys(configInput);
+
+            if (!axogenKeys.some((key) => inputKeys.includes(key))) {
+                // If the input is just variables, convert it to AxogenConfig format
+                configInput = {
+                    targets: {
+                        env: {
+                            path: ".env",
+                            type: "env",
+                            variables: configInput as Record<string, unknown>,
+                        },
+                    },
+                } as AxogenConfig;
+            }
 
             // Validate the config using Zod - let Zod handle all validation and errors
-            return axogenConfigSchema.parse(config);
+            return {
+                ...axogenConfigSchema.parse(configInput),
+                _type: "AxogenConfig",
+            } as ZodAxogenConfig;
         } catch (error) {
             if (error instanceof z.ZodError) {
                 const validationErrors = zodIssuesToErrors(error.issues);
@@ -60,17 +94,18 @@ export class ConfigLoader {
         try {
             return createJiti(import.meta.url, {
                 interopDefault: true,
+                tryNative: false,
+                sourceMaps: true,
+                fsCache: true,
+                moduleCache: true,
+                transformModules: ["@axonotes/axogen"],
+                extensions: [".ts", ".js"],
             });
         } catch (error) {
             throw new Error(
                 `jiti is required to load TypeScript config files. Install it with: ${pretty.text.accent("bun add jiti")}`
             );
         }
-    }
-
-    /** Resolve config input (handle functions) */
-    private async resolveConfig(input: ConfigInput): Promise<AxogenConfig> {
-        return await normalizeConfig(input);
     }
 
     /** Find the config file path */
@@ -112,6 +147,8 @@ export class ConfigLoader {
 export const configLoader = new ConfigLoader();
 
 /** Load configuration - convenience function */
-export async function loadConfig(configPath?: string): Promise<AxogenConfig> {
+export async function loadConfig(
+    configPath?: string
+): Promise<ZodAxogenConfig> {
     return configLoader.load(configPath);
 }

@@ -1,8 +1,8 @@
-import type {JsonTarget} from "../types";
+import type {ZodJsonTarget} from "../config/types";
 
 export class JsonGenerator {
     /** Generate JSON file content from target configuration */
-    generate(target: JsonTarget): string {
+    generate(target: ZodJsonTarget): string {
         const indent = target.indent ?? 2;
 
         try {
@@ -29,7 +29,7 @@ export class JsonGenerator {
     }
 
     /** Add metadata fields to the JSON output */
-    private addMetadata(variables: any, target: JsonTarget): any {
+    private addMetadata(variables: any, target: ZodJsonTarget): any {
         const timestamp = new Date().toISOString();
 
         return {

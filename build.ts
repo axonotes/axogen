@@ -154,6 +154,8 @@ async function buildLibraryWithTsup() {
                 `"${version}"`,
                 "--external",
                 "typescript",
+                "--cjs-interop",
+                "--splitting",
             ],
             {
                 cwd: process.cwd(),

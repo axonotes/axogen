@@ -1,9 +1,9 @@
 import * as yaml from "js-yaml";
-import type {YamlTarget} from "../types";
+import type {ZodYamlTarget} from "../config/types";
 
 export class YamlGenerator {
     /** Generate YAML file content from target configuration */
-    generate(target: YamlTarget): string {
+    generate(target: ZodYamlTarget): string {
         const options = {
             indent: 2,
             lineWidth: 80,
@@ -52,7 +52,7 @@ export class YamlGenerator {
     }
 
     /** Add metadata to the YAML output */
-    private addMetadata(variables: any, target: YamlTarget): any {
+    private addMetadata(variables: any, target: ZodYamlTarget): any {
         return {
             _meta: {
                 generator: "axogen",

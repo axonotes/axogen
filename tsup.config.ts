@@ -11,14 +11,20 @@ export default defineConfig({
     dts: true,
     sourcemap: true,
     clean: true,
+    splitting: false,
+    cjsInterop: true,
     outDir: "dist",
     define: {
         __VERSION__: `"${version}"`,
     },
     external: ["typescript"],
-    splitting: false,
     treeshake: true,
     minify: false,
     target: "node18",
     metafile: true,
+    outExtension({format}) {
+        return {
+            js: format === "cjs" ? ".cjs" : ".js",
+        };
+    },
 });

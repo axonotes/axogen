@@ -1,8 +1,8 @@
-import type {EnvTarget} from "../types";
+import type {ZodEnvTarget} from "../config/types";
 
 export class EnvGenerator {
     /** Generate .env file content from target configuration */
-    generate(target: EnvTarget): string {
+    generate(target: ZodEnvTarget): string {
         const lines: string[] = [];
 
         // Add header comments
@@ -42,7 +42,7 @@ export class EnvGenerator {
     }
 
     /** Create metadata variables */
-    private createMetaVariables(target: EnvTarget): Record<string, any> {
+    private createMetaVariables(target: ZodEnvTarget): Record<string, any> {
         return {
             _meta: {
                 generator: "axogen",

@@ -1,12 +1,5 @@
-// cli-helpers/commands/theme.ts
-
 import {Command} from "commander";
-import {
-    pretty,
-    setTheme,
-    configurePretty,
-    getCurrentTheme,
-} from "../../utils/pretty";
+import {pretty, setTheme, getCurrentTheme} from "../../utils/pretty";
 import {themes, type ThemeName, getTheme} from "../../utils/themes";
 
 /**
@@ -118,6 +111,9 @@ function createThemeDemo(themeName: ThemeName, compact: boolean = false): void {
             `Background: ${pretty.text.dimmed(theme.colors.background)}`
         );
     }
+
+    // Restore original theme
+    setTheme(originalTheme as ThemeName);
 }
 
 /**
@@ -138,7 +134,6 @@ function showThemeList(): void {
         if (index > 0) console.log(); // Spacing between themes
 
         // Temporarily switch to this theme for the demo
-        const originalConfig = {...(pretty as any)}; // Store original
         createThemeDemo(themeName, true);
 
         // Show description

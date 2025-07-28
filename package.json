@@ -3,9 +3,21 @@
     "version": "0.3.1",
     "description": "TypeScript-native configuration system that unifies typed environment variables, code generation, and task management for any project",
     "type": "module",
-    "main": "dist/index.js",
+    "main": "dist/index.cjs",
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            },
+            "require": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.cjs"
+            }
+        }
+    },
     "bin": {
         "axogen": "./bin/axogen"
     },

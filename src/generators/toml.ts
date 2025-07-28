@@ -1,9 +1,9 @@
 import * as TOML from "@iarna/toml";
-import type {TomlTarget} from "../types";
+import type {ZodTomlTarget} from "../config/types";
 
 export class TomlGenerator {
     /** Generate TOML file content from target configuration */
-    generate(target: TomlTarget): string {
+    generate(target: ZodTomlTarget): string {
         try {
             // Process variables to handle non-TOML-serializable types
             const processedVariables = this.processVariables(target.variables);
@@ -38,7 +38,7 @@ export class TomlGenerator {
     }
 
     /** Add metadata to the TOML output */
-    private addMetadata(variables: any, target: TomlTarget): any {
+    private addMetadata(variables: any, target: ZodTomlTarget): any {
         return {
             _meta: {
                 generator: "axogen",

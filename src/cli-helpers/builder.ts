@@ -1,16 +1,19 @@
 import {Command} from "commander";
 import {z} from "zod";
-import type {
-    AnyCommand,
-    AxogenConfig,
-    CommandGlobalContext,
-    SchemaCommand,
-} from "../types";
 import {commandRunner} from "./runner";
 import {pretty} from "../utils/pretty";
 import {zodIssuesToErrors} from "../utils/helpers.ts";
+import type {
+    CommandGlobalContext,
+    ZodAnyCommand,
+    ZodAxogenConfig,
+    ZodSchemaCommand,
+} from "../config/types";
 
-export function buildDynamicCommands(cli: Command, config: AxogenConfig): void {
+export function buildDynamicCommands(
+    cli: Command,
+    config: ZodAxogenConfig
+): void {
     if (!config.commands) return;
 
     for (const [name, command] of Object.entries(config.commands)) {
@@ -21,8 +24,8 @@ export function buildDynamicCommands(cli: Command, config: AxogenConfig): void {
 
 function createCommandFromConfig(
     name: string,
-    command: AnyCommand,
-    config: AxogenConfig
+    command: ZodAnyCommand,
+    config: ZodAxogenConfig
 ): Command {
     const cmd = new Command(name);
 
@@ -40,8 +43,8 @@ function createCommandFromConfig(
 
 function buildSchemaCommand(
     cmd: Command,
-    command: SchemaCommand,
-    config: AxogenConfig
+    command: ZodSchemaCommand,
+    config: ZodAxogenConfig
 ): Command {
     // Add options - Commander.js just handles basic parsing
     if (command.options) {
@@ -300,8 +303,8 @@ function canUnwrap(
 
 function buildSimpleCommand(
     cmd: Command,
-    command: AnyCommand,
-    config: AxogenConfig
+    command: ZodAnyCommand,
+    config: ZodAxogenConfig
 ): Command {
     cmd.allowUnknownOption(true);
     cmd.allowExcessArguments(true);
@@ -338,7 +341,7 @@ function buildSimpleCommand(
     return cmd;
 }
 
-function getCommandHelp(command: AnyCommand): string | undefined {
+function getCommandHelp(command: ZodAnyCommand): string | undefined {
     if (
         typeof command === "string" ||
         typeof command === "function" ||
@@ -349,7 +352,7 @@ function getCommandHelp(command: AnyCommand): string | undefined {
     return command.help;
 }
 
-function isSchemaCommand(command: AnyCommand): command is SchemaCommand {
+function isSchemaCommand(command: ZodAnyCommand): command is ZodSchemaCommand {
     return (
         typeof command === "object" &&
         command !== null &&
