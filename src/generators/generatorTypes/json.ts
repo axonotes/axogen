@@ -12,7 +12,7 @@ export class JsonGenerator {
         return JSON.stringify(
             processedVariables,
             options?.replacer,
-            options?.space
+            options?.space || 2
         );
     }
 }

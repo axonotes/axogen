@@ -10,6 +10,10 @@ export class Json5Generator {
         options?: Json5TargetOptions
     ): string {
         const processedVariables = this.processor.process(variables);
-        return JSON5.stringify(processedVariables, undefined, options?.space);
+        return JSON5.stringify(
+            processedVariables,
+            undefined,
+            options?.space || 2
+        );
     }
 }

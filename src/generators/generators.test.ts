@@ -171,7 +171,7 @@ describe("TargetGenerator", () => {
                 variables: testData,
             } as any;
 
-            await expect(generator.generate("test", target)).rejects.toThrow(
+            expect(generator.generate("test", target)).rejects.toThrow(
                 "Unsupported target type: unsupported"
             );
         });
@@ -190,7 +190,7 @@ describe("TargetGenerator", () => {
 
             expect(fs.existsSync(outputPath)).toBe(true);
             const content = fs.readFileSync(outputPath, "utf-8");
-            expect(content).toContain('"name":"Test Config"');
+            expect(content).toContain('"name": "Test Config"');
         });
 
         test("should create directories recursively", async () => {
@@ -307,7 +307,7 @@ describe("TargetGenerator", () => {
                 generate_meta: false,
             };
 
-            await expect(generator.generate("test", target)).rejects.toThrow(
+            expect(generator.generate("test", target)).rejects.toThrow(
                 'Target "test" contains secrets'
             );
         });
@@ -352,7 +352,7 @@ describe("TargetGenerator", () => {
                 generate_meta: false,
             };
 
-            await expect(generator.generate("test", target)).rejects.toThrow(
+            expect(generator.generate("test", target)).rejects.toThrow(
                 'Target "test" contains secrets'
             );
         });
@@ -465,7 +465,7 @@ describe("TargetGenerator", () => {
                 generate_meta: false,
             };
 
-            await expect(generator.generate("test", target)).rejects.toThrow();
+            expect(generator.generate("test", target)).rejects.toThrow();
         });
 
         test("should throw error for unsupported template engine", async () => {
@@ -478,7 +478,7 @@ describe("TargetGenerator", () => {
                 generate_meta: false,
             };
 
-            await expect(generator.generate("test", target)).rejects.toThrow(
+            expect(generator.generate("test", target)).rejects.toThrow(
                 "Unsupported template engine: unsupported"
             );
         });
@@ -492,7 +492,7 @@ describe("TargetGenerator", () => {
                 // Missing required 'type' property
             } as any;
 
-            await expect(
+            expect(
                 generator.generate("test", malformedTarget)
             ).rejects.toThrow();
         });
