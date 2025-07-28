@@ -136,7 +136,9 @@ describe("TargetGenerator", () => {
             const target: ZodTarget = {
                 type: "csv",
                 path: "test.csv",
-                variables: csvTestData, // Use CSV-compatible data
+                variables: {
+                    csv: csvTestData,
+                }, // Use CSV-compatible data
                 generate_meta: false,
             };
 
@@ -375,7 +377,9 @@ describe("TargetGenerator", () => {
             const target: ZodTarget = {
                 type: "csv",
                 path: "no-metadata.csv",
-                variables: csvTestData, // Use CSV-compatible data
+                variables: {
+                    csv: csvTestData,
+                }, // Use CSV-compatible data
                 generate_meta: true,
             };
 
