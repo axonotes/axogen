@@ -71,30 +71,32 @@ bun add @axonotes/axogen
 Create `axogen.config.ts` with everything your full-stack app needs:
 
 ```typescript
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv} from "@axonotes/axogen";
 
 // Define all your configuration in one place
-const env = createTypedEnv({
-    // Database configuration
-    DATABASE_URL: z.url(),
-    DATABASE_NAME: z.string().default("fullstack_app"),
-    DATABASE_USER: z.string().default("postgres"),
-    DATABASE_PASSWORD: z.string(),
-    DATABASE_PORT: z.coerce.number().default(5432),
+const env = loadEnv(
+    z.object({
+        // Database configuration
+        DATABASE_URL: z.url(),
+        DATABASE_NAME: z.string().default("fullstack_app"),
+        DATABASE_USER: z.string().default("postgres"),
+        DATABASE_PASSWORD: z.string(),
+        DATABASE_PORT: z.coerce.number().default(5432),
 
-    // API configuration
-    API_PORT: z.coerce.number().default(3001),
-    API_HOST: z.string().default("localhost"),
-    JWT_SECRET: z.string().min(32),
+        // API configuration
+        API_PORT: z.coerce.number().default(3001),
+        API_HOST: z.string().default("localhost"),
+        JWT_SECRET: z.string().min(32),
 
-    // Frontend configuration
-    FRONTEND_PORT: z.coerce.number().default(3000),
+        // Frontend configuration
+        FRONTEND_PORT: z.coerce.number().default(3000),
 
-    // Environment
-    NODE_ENV: z
-        .enum(["development", "staging", "production"])
-        .default("development"),
-});
+        // Environment
+        NODE_ENV: z
+            .enum(["development", "staging", "production"])
+            .default("development"),
+    })
+);
 
 export default defineConfig({
     targets: {
@@ -402,11 +404,13 @@ export default defineConfig({
 ### Feature Flags
 
 ```typescript
-const env = createTypedEnv({
-    // ... other vars
-    FEATURE_ANALYTICS: z.boolean().default(false),
-    FEATURE_BETA_UI: z.boolean().default(false),
-});
+const env = loadEnv(
+    z.object({
+        // ... other vars
+        FEATURE_ANALYTICS: z.boolean().default(false),
+        FEATURE_BETA_UI: z.boolean().default(false),
+    })
+);
 
 export default defineConfig({
     targets: {

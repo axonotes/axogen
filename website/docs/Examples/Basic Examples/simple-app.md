@@ -67,17 +67,19 @@ npm install @axonotes/axogen
 Create `axogen.config.ts`:
 
 ```typescript
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv} from "@axonotes/axogen";
 
 // Define what environment variables you need
-const env = createTypedEnv({
-    DATABASE_URL: z.url(),
-    PORT: z.coerce.number().default(3000),
-    NODE_ENV: z
-        .enum(["development", "staging", "production"])
-        .default("development"),
-    API_KEY: z.string().min(10, "API key should be at least 10 characters"),
-});
+const env = loadEnv(
+    z.object({
+        DATABASE_URL: z.url(),
+        PORT: z.coerce.number().default(3000),
+        NODE_ENV: z
+            .enum(["development", "staging", "production"])
+            .default("development"),
+        API_KEY: z.string().min(10, "API key should be at least 10 characters"),
+    })
+);
 
 export default defineConfig({
     targets: {
@@ -234,17 +236,19 @@ different file types from the same source data.
 **Want different environments?** Use TypeScript's flexibility:
 
 ```typescript
-const env = createTypedEnv({
-    DATABASE_URL: z
-        .string()
-        .url()
-        .default(
-            process.env.NODE_ENV === "production"
-                ? "postgresql://prod-server/db"
-                : "postgresql://localhost:5432/dev-db"
-        ),
-    // ... other variables
-});
+const env = loadEnv(
+    z.object({
+        DATABASE_URL: z
+            .string()
+            .url()
+            .default(
+                process.env.NODE_ENV === "production"
+                    ? "postgresql://prod-server/db"
+                    : "postgresql://localhost:5432/dev-db"
+            ),
+        // ... other variables
+    })
+);
 ```
 
 **Want different file locations?** Change the path:

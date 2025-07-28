@@ -40,12 +40,14 @@ apps, PHP websites - doesn't matter. If your project uses config files, Axogen
 can help.
 
 ```typescript
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv} from "@axonotes/axogen";
 
-const env = createTypedEnv({
-    DATABASE_URL: z.url(),
-    PORT: z.coerce.number().default(3000),
-});
+const env = loadEnv(
+    z.object({
+        DATABASE_URL: z.url(),
+        PORT: z.coerce.number().default(3000),
+    })
+);
 
 export default defineConfig({
     targets: {
@@ -129,15 +131,17 @@ npm install @axonotes/axogen
 
 ```typescript
 // axogen.config.ts
-import {z, defineConfig, createTypedEnv, command} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv, command} from "@axonotes/axogen";
 
-const env = createTypedEnv({
-    DATABASE_URL: z.url("Must be a valid database URL"),
-    PORT: z.coerce.number().default(3000),
-    NODE_ENV: z
-        .enum(["development", "staging", "production"])
-        .default("development"),
-});
+const env = loadEnv(
+    z.object({
+        DATABASE_URL: z.url("Must be a valid database URL"),
+        PORT: z.coerce.number().default(3000),
+        NODE_ENV: z
+            .enum(["development", "staging", "production"])
+            .default("development"),
+    })
+);
 
 export default defineConfig({
     targets: {

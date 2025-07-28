@@ -136,18 +136,20 @@ Let me show you:
 
 ```typescript
 // axogen.config.ts
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv} from "@axonotes/axogen";
 
-const env = createTypedEnv({
-    SPACETIME_PORT: z.coerce.number().default(3000),
-    DASHBOARD_PORT: z.coerce.number().default(5173),
-    WORKOS_CLIENT_ID: z.string().min(1, "WorkOS Client ID is required"),
-    DATABASE_URL: z.url("Must be a valid database URL"),
-    JWT_PRIVATE_KEY_BASE64: z.string().base64("Invalid base64 encoding"),
-    NODE_ENV: z
-        .enum(["development", "staging", "production"])
-        .default("development"),
-});
+const env = loadEnv(
+    z.object({
+        SPACETIME_PORT: z.coerce.number().default(3000),
+        DASHBOARD_PORT: z.coerce.number().default(5173),
+        WORKOS_CLIENT_ID: z.string().min(1, "WorkOS Client ID is required"),
+        DATABASE_URL: z.url("Must be a valid database URL"),
+        JWT_PRIVATE_KEY_BASE64: z.string().base64("Invalid base64 encoding"),
+        NODE_ENV: z
+            .enum(["development", "staging", "production"])
+            .default("development"),
+    })
+);
 
 export default defineConfig({
     targets: {
@@ -237,16 +239,18 @@ validated using Zod's full power before anything gets generated.
 Want custom validation? Just use any Zod method:
 
 ```typescript
-const env = createTypedEnv({
-    API_RATE_LIMIT: z.coerce.number().min(1).max(1000),
-    WEBHOOK_SECRET: z
-        .string()
-        .min(32, "Webhook secret must be at least 32 characters"),
-    ALLOWED_ORIGINS: z
-        .string()
-        .transform((s) => s.split(","))
-        .pipe(z.array(z.url())),
-});
+const env = loadEnv(
+    z.object({
+        API_RATE_LIMIT: z.coerce.number().min(1).max(1000),
+        WEBHOOK_SECRET: z
+            .string()
+            .min(32, "Webhook secret must be at least 32 characters"),
+        ALLOWED_ORIGINS: z
+            .string()
+            .transform((s) => s.split(","))
+            .pipe(z.array(z.url())),
+    })
+);
 ```
 
 It's like having TypeScript for your environment variables. Well, it literally
@@ -446,13 +450,17 @@ Want to see what this looks like in a real production application? Here's a
 glimpse of AxonotesCore's actual config (simplified for readability):
 
 ```typescript
-const env = createTypedEnv({
-    AXONOTES_ENV: z.enum(["local", "staging", "production"]).default("local"),
-    WORKOS_CLIENT_ID: z.string(),
-    WORKOS_API_KEY: z.string(),
-    JWT_PRIVATE_KEY_BASE64: z.string().base64(),
-    JWT_PUBLIC_KEY_BASE64: z.string().base64(),
-});
+const env = loadEnv(
+    z.object({
+        AXONOTES_ENV: z
+            .enum(["local", "staging", "production"])
+            .default("local"),
+        WORKOS_CLIENT_ID: z.string(),
+        WORKOS_API_KEY: z.string(),
+        JWT_PRIVATE_KEY_BASE64: z.string().base64(),
+        JWT_PUBLIC_KEY_BASE64: z.string().base64(),
+    })
+);
 
 const getConfig = () => {
     switch (env.AXONOTES_ENV) {
@@ -540,12 +548,12 @@ don't need a platform team.
 npm install @axonotes/axogen
 
 # Create a minimal config using echo
-echo 'import {defineConfig, createTypedEnv, z} from "@axonotes/axogen";
-const env = createTypedEnv({
+echo 'import {defineConfig, loadEnv, z} from "@axonotes/axogen";
+const env = loadEnv(z.object({
     NODE_ENV: z.string().default("development"),
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.url(),
-});
+}));
 export default defineConfig({
     targets: {
         app: {

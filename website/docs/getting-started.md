@@ -55,12 +55,14 @@ Of course, hardcoded values aren't very useful. Let's make it read from your
 actual environment:
 
 ```typescript
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv} from "@axonotes/axogen";
 
-const env = createTypedEnv({
-    PORT: z.coerce.number().default(3000),
-    DATABASE_URL: z.string(),
-});
+const env = loadEnv(
+    z.object({
+        PORT: z.coerce.number().default(3000),
+        DATABASE_URL: z.string(),
+    })
+);
 
 export default defineConfig({
     targets: {
@@ -98,12 +100,14 @@ silent failures.
 Here's where it gets interesting. Need the same data in different formats? Easy:
 
 ```typescript
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv} from "@axonotes/axogen";
 
-const env = createTypedEnv({
-    PORT: z.coerce.number().default(3000),
-    DATABASE_URL: z.string(),
-});
+const env = loadEnv(
+    z.object({
+        PORT: z.coerce.number().default(3000),
+        DATABASE_URL: z.string(),
+    })
+);
 
 export default defineConfig({
     targets: {

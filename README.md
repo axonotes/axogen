@@ -84,16 +84,18 @@ With Axogen, you define everything once:
 
 ```typescript
 // axogen.config.ts
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv} from "@axonotes/axogen";
 
-const env = createTypedEnv({
-    DATABASE_URL: z.string().url(),
-    API_PORT: z.coerce.number().default(3001),
-    WEB_PORT: z.coerce.number().default(3000),
-    NODE_ENV: z
-        .enum(["development", "staging", "production"])
-        .default("development"),
-});
+const env = loadEnv(
+    z.object({
+        DATABASE_URL: z.string().url(),
+        API_PORT: z.coerce.number().default(3001),
+        WEB_PORT: z.coerce.number().default(3000),
+        NODE_ENV: z
+            .enum(["development", "staging", "production"])
+            .default("development"),
+    })
+);
 
 export default defineConfig({
     targets: {

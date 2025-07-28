@@ -42,12 +42,12 @@ If you see a version number, you're golden. Want to test it out real quick?
 
 ```bash
 # Create a minimal config using echo
-echo 'import {defineConfig, createTypedEnv, z} from "@axonotes/axogen";
-const env = createTypedEnv({
+echo 'import {defineConfig, loadEnv, z} from "@axonotes/axogen";
+const env = loadEnv(z.object({
     NODE_ENV: z.string().default("development"),
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.url(),
-});
+}));
 export default defineConfig({
     targets: {
         app: {

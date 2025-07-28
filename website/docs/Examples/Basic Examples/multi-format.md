@@ -41,17 +41,19 @@ Instead of maintaining three separate files, we define everything once:
 
 ```typescript
 // axogen.config.ts
-import {z, defineConfig, createTypedEnv} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv} from "@axonotes/axogen";
 
-const env = createTypedEnv({
-    DATABASE_URL: z.url(),
-    API_URL: z.url(),
-    PORT: z.coerce.number().default(3000),
-    NODE_ENV: z
-        .enum(["development", "staging", "production"])
-        .default("development"),
-    JWT_SECRET: z.string().min(32),
-});
+const env = loadEnv(
+    z.object({
+        DATABASE_URL: z.url(),
+        API_URL: z.url(),
+        PORT: z.coerce.number().default(3000),
+        NODE_ENV: z
+            .enum(["development", "staging", "production"])
+            .default("development"),
+        JWT_SECRET: z.string().min(32),
+    })
+);
 
 export default defineConfig({
     targets: {
@@ -208,12 +210,14 @@ the right places automatically.
 **Different environments?** Use TypeScript's power:
 
 ```typescript
-const env = createTypedEnv({
-    DATABASE_URL: z.string().url(),
-    NODE_ENV: z
-        .enum(["development", "staging", "production"])
-        .default("development"),
-});
+const env = loadEnv(
+    z.object({
+        DATABASE_URL: z.string().url(),
+        NODE_ENV: z
+            .enum(["development", "staging", "production"])
+            .default("development"),
+    })
+);
 
 // In your config
 export default defineConfig({

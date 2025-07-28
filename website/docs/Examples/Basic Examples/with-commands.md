@@ -57,16 +57,18 @@ my-api/
 Create your `axogen.config.ts`:
 
 ```typescript
-import {z, defineConfig, createTypedEnv, defineCommand} from "@axonotes/axogen";
+import {z, defineConfig, loadEnv, defineCommand} from "@axonotes/axogen";
 
-const env = createTypedEnv({
-    DATABASE_URL: z.url(),
-    NODE_ENV: z
-        .enum(["development", "test", "production"])
-        .default("development"),
-    PORT: z.coerce.number().default(3000),
-    API_SECRET: z.string().min(32),
-});
+const env = loadEnv(
+    z.object({
+        DATABASE_URL: z.url(),
+        NODE_ENV: z
+            .enum(["development", "test", "production"])
+            .default("development"),
+        PORT: z.coerce.number().default(3000),
+        API_SECRET: z.string().min(32),
+    })
+);
 
 export default defineConfig({
     targets: {
