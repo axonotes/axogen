@@ -20,9 +20,6 @@ export type {
     YamlTarget,
     TomlTarget,
     TemplateTarget,
-    EnvSchema,
-    ParsedEnv,
-    EnvConfig,
     AnyCommand,
     StringCommand,
     SchemaCommand,
@@ -67,7 +64,7 @@ export {
 export {loadConfig} from "./core/config";
 
 // Export env utilities
-export {loadEnv, createTypedEnv} from "./env/typed";
+export {loadEnv} from "./env/load.ts";
 
 // Export unsafe
 export {unsafe} from "./utils/secrets";
