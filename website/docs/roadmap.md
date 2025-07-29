@@ -33,7 +33,7 @@
 
 ### Core Configuration Variants
 
-- [ ] **Variant 1**: Zero Config (Magic Mode) - auto-detection
+- [ ] **Variant 1**: Zero Config (Magic Mode) - auto-detection (UPDATE: removed)
 - [x] **Variant 2**: Simple Explicit configuration
 - [x] **Variant 3**: Multi-Target Basic configuration
 - [x] `defineConfig()` helper function
@@ -41,10 +41,10 @@
 
 ### Essential File Formats (Phase 1)
 
-- [ ] **ENV** format (`.env`) - read & write
-- [ ] **JSON** format (`.json`) - read & write
-- [ ] **YAML** format (`.yaml`, `.yml`) - read & write
-- [ ] Bidirectional support for all Phase 1 formats
+- [x] **ENV** format (`.env`) - read & write
+- [x] **JSON** format (`.json`) - read & write
+- [x] **YAML** format (`.yaml`, `.yml`) - read & write
+- [x] Bidirectional support for all Phase 1 formats
 
 ### Basic Command System
 
@@ -61,15 +61,15 @@
 - [x] **Variant 4**: Type-Safe Configuration with `defineConfig`
 - [x] **Variant 5**: Environment Loading and Validation
 - [x] `loadEnv()` function with Zod validation
-- [ ] `loadFile()` function for config files
+- [x] `loadFile()` function for config files
 - [x] Schema validation for targets
 
 ### Enhanced File Formats (Phase 2)
 
 - [ ] **JavaScript** format (`.js`, `.mjs`) - read & write
 - [ ] **TypeScript** format (`.ts`, `.mts`) - read & write
-- [ ] **TOML** format (`.toml`) - read & write
-- [ ] **JSONC** format (`.jsonc`) - read & write
+- [x] **TOML** format (`.toml`) - read & write
+- [x] **JSONC** format (`.jsonc`) - read & write
 
 ### Command Helpers & Orchestration
 
@@ -77,8 +77,8 @@
 - [x] `command.function()` helper
 - [x] `command.define()` with options/args
 - [x] `cmd()` shorthand helper
-- [ ] `command.parallel()` execution
-- [ ] `command.series()` execution
+- [ ] `command.parallel()` execution (UPDATE: removed)
+- [ ] `command.series()` execution (UPDATE: removed)
 - [x] Command groups with `command.group()`
 - [x] Rich command context object
 - [x] Global options support
@@ -101,10 +101,10 @@
 
 ### Additional File Formats (Phase 3)
 
-- [ ] **XML** format (`.xml`) - read & write
-- [ ] **INI** format (`.ini`, `.conf`, `.cfg`) - read & write
-- [ ] **Properties** format (`.properties`) - read & write
-- [ ] **HCL** format (`.hcl`) - read & write
+- [x] **XML** format (`.xml`) - read & write
+- [x] **INI** format (`.ini`, `.conf`, `.cfg`) - read & write
+- [x] **Properties** format (`.properties`) - read & write
+- [ ] **HCL** format (`.hcl`) - read & write (UPDATE: removed)
 
 ### Advanced Template Engines
 
