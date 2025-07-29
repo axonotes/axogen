@@ -1,6 +1,6 @@
 {
     "name": "@axonotes/axogen",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "description": "TypeScript-native configuration system that unifies typed environment variables, code generation, and task management for any project",
     "type": "module",
     "main": "dist/index.cjs",
@@ -27,8 +27,8 @@
     ],
     "scripts": {
         "build": "bun run build.ts",
-        "preview": "bun run format && bun run build && bun link",
-        "publish": "bun run format && bun run build && bun publish",
+        "preview": "bun run format && bun test && bun run build && bun link",
+        "publish": "bun run format && bun test && bun run build && bun publish",
         "test:local": "bun run build && ./bin/axogen --version",
         "docs:start": "cd website && bun run start",
         "docs:build": "cd website && bun run build",

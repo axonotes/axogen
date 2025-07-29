@@ -136,7 +136,7 @@
 - [x] `schema` validation option
 - [x] `condition` conditional generation
 - [x] `generate_meta` metadata comments
-- [ ] `backup` file backup option
+- [x] `backup` file backup option
 - [x] Template-specific options
 
 ### Enhanced CLI Features

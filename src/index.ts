@@ -4,6 +4,24 @@
  * commands, and target generation.
  */
 
+import {createCLI} from "./cli-helpers";
+import {pretty} from "./utils/pretty.ts";
+
+/**
+ * Runs the CLI with the provided arguments (or process.argv if not provided).
+ * This function can be imported and called from other packages.
+ * @param argv Optional array of command line arguments
+ */
+export async function runCLI(argv?: string[]): Promise<void> {
+    try {
+        const cli = await createCLI();
+        await cli.parseAsync(argv || process.argv);
+    } catch (error) {
+        pretty.error(`Failed to initialize CLI: ${error}`);
+        process.exit(1);
+    }
+}
+
 /** Core CLI helper functions for command execution */
 export {exec, executeCommand, liveExec} from "./cli-helpers";
 
