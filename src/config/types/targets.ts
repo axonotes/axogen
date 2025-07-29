@@ -1,288 +1,511 @@
+/**
+ * This file is solely for the UX of defining targets in Axogen.
+ * It provides a set of types and factory functions to create target definitions
+ * for various data formats and configurations.
+ * It is not used to verify the structure of the config file.
+ * This is where zod_targets.ts comes in.
+ * It only exports some types and the factory functions.
+ * Target Types for usage in this package should be used from
+ * the zod_targets.ts file.
+ */
+
 import * as z from "zod";
 import Hjson from "hjson";
-import ini from "ini";
-import * as yaml from "js-yaml";
+import * as js_ini from "ini";
+import * as js_yaml from "js-yaml";
 import type {UnparseConfig} from "papaparse";
 import type {XmlBuilderOptions} from "fast-xml-parser";
 
-export type SchemaType = z.ZodType | Record<string, any>;
+// ---- Target Options ----
 
 /**
- * Supported file extensions for target generation
+ * Options for JSON target generation
  */
-export const SupportedTargetTypes = [
-    // Core formats
-    "json",
-    "json5",
-    "jsonc",
-    "hjson",
-
-    // Configuration formats
-    "yaml",
-    "toml",
-    "ini",
-    "properties",
-    "env",
-
-    // Structured data
-    "xml",
-    "csv",
-
-    // Alternative formats
-    "cson",
-
-    // Template formats
-    "template",
-];
-
-export type SupportedTargetTypesType = (typeof SupportedTargetTypes)[number];
-
-/**
- * Base interface for all target schemas
- * @template TSchema - The Zod schema type for the target
- * @property {string} path - The file path where the target will be generated
- * @property {TSchema} schema - The Zod schema defining the structure of the target
- * @property {z.infer<TSchema>} variables - The inferred type of the schema, representing the variables to be used in the target
- * @property {boolean} [generate_meta] - Optional flag to indicate whether to generate metadata for the target. Defaults to false. (ignored for csv)
- */
-interface BaseTargetSchema<TSchema extends z.ZodType> {
-    path: string;
-    schema: TSchema;
-    generate_meta?: boolean;
-}
-
 export type JsonTargetOptions = {
     replacer?: (number | string)[] | null;
     space?: string | number;
 };
-export interface JsonTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "json";
-    variables: z.infer<TSchema>;
-    options?: JsonTargetOptions;
-}
 
+/**
+ * Options for JSON5 target generation
+ */
 export type Json5TargetOptions = {
     space?: string | number | null;
 };
-export interface Json5Target<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "json5";
-    variables: z.infer<TSchema>;
-    options?: Json5TargetOptions;
-}
 
+/**
+ * Options for JSONC target generation
+ * JSONC is JSON with comments, so it uses the same options as JSON
+ */
 export interface JsoncTargetOptions {
     replacer?: (number | string)[] | null;
     space?: string | number;
 }
-export interface JsoncTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "jsonc";
-    variables: z.infer<TSchema>;
-    options?: JsoncTargetOptions;
-}
 
+/**
+ * Options for HJSON target generation
+ */
 export type HjsonTargetOptions = Hjson.SerializeOptions;
-export interface HjsonTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "hjson";
-    variables: z.infer<TSchema>;
-    options?: Hjson.SerializeOptions;
-}
 
-export type YamlTargetOptions = yaml.DumpOptions;
-export interface YamlTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "yaml";
-    variables: z.infer<TSchema>;
-    options?: YamlTargetOptions;
-}
+/**
+ * Options for YAML target generation
+ */
+export type YamlTargetOptions = js_yaml.DumpOptions;
 
-export interface TomlTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "toml";
-    variables: z.infer<TSchema>;
-}
+/**
+ * Options for INI target generation
+ */
+export type IniTargetOptions = js_ini.EncodeOptions;
 
-export type IniTargetOptions = ini.EncodeOptions;
-export interface IniTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "ini";
-    variables: z.infer<TSchema>;
-    options?: IniTargetOptions;
-}
-
+/**
+ * Options for Properties target generation
+ */
 export type PropertiesTargetOptions = {
     align?: boolean;
     sort?: boolean;
     whitespace?: boolean;
     platform?: string;
 };
-export interface PropertiesTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "properties";
-    variables: z.infer<TSchema>;
-    options?: PropertiesTargetOptions;
-}
-
-export interface EnvTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "env";
-    variables: z.infer<TSchema>;
-}
-
-export type XmlTargetOptions = XmlBuilderOptions;
-export interface XmlTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "xml";
-    variables: z.infer<TSchema>;
-    config?: XmlBuilderOptions;
-}
-
-export type CsvTargetOptions = UnparseConfig;
-export interface CsvTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "csv";
-    variables: z.infer<TSchema>;
-    options?: CsvTargetOptions;
-}
-
-export interface CsonTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "cson";
-    variables: z.infer<TSchema>;
-}
-
-export type TemplateTargetEngine = "nunjucks" | "handlebars" | "mustache";
-export interface TemplateTarget<TSchema extends z.ZodType>
-    extends BaseTargetSchema<TSchema> {
-    type: "template";
-    variables: z.infer<TSchema>;
-    template: string;
-    engine?: TemplateTargetEngine;
-}
 
 /**
- * Base interface for all target schemas without a Zod schema
- * @property {string} path - The file path where the target will be generated
- * @property {Record<string, any>} variables - The variables to be used in the target
- * @property {boolean} [generate_meta] - Optional flag to indicate whether to generate metadata for the target. Defaults to false. (ignored for csv)
+ * Options for XML target generation
  */
-interface BaseTargetNoSchema {
+export type XmlTargetOptions = XmlBuilderOptions;
+
+/**
+ * Options for CSV target generation
+ */
+export type CsvTargetOptions = UnparseConfig;
+
+/**
+ * Template target engine types
+ * - "nunjucks": Nunjucks templating engine
+ * - "handlebars": Handlebars templating engine
+ * - "mustache": Mustache templating engine
+ */
+export const templateTargetEngines = [
+    "nunjucks",
+    "handlebars",
+    "mustache",
+] as const;
+export type TemplateTargetEngine = (typeof templateTargetEngines)[number];
+
+// ---- Target Definitions ----
+
+type InferVariablesType<TSchema> =
+    TSchema extends z.ZodType<infer T> ? T : TSchema;
+
+type ValidateSchemaVariables<TSchema, TVariables> =
+    TSchema extends z.ZodType<infer Expected>
+        ? TVariables extends Expected
+            ? TVariables
+            : never
+        : TVariables;
+
+interface BaseTargetDefinition<TType extends string, TSchema, TVariables> {
+    type: TType;
     path: string;
+    schema?: TSchema;
+    variables: TVariables;
     generate_meta?: boolean;
 }
 
-export interface JsonTargetNoSchema extends BaseTargetNoSchema {
-    type: "json";
-    variables: Record<string, any>;
+export interface JsonTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "json",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
     options?: JsonTargetOptions;
 }
 
-export interface Json5TargetNoSchema extends BaseTargetNoSchema {
-    type: "json5";
-    variables: Record<string, any>;
+export interface Json5TargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "json5",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
     options?: Json5TargetOptions;
 }
 
-export interface JsoncTargetNoSchema extends BaseTargetNoSchema {
-    type: "jsonc";
-    variables: Record<string, any>;
+export interface JsoncTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "jsonc",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
     options?: JsoncTargetOptions;
 }
 
-export interface HjsonTargetNoSchema extends BaseTargetNoSchema {
-    type: "hjson";
-    variables: Record<string, any>;
+export interface HjsonTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "hjson",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
     options?: HjsonTargetOptions;
 }
 
-export interface YamlTargetNoSchema extends BaseTargetNoSchema {
-    type: "yaml";
-    variables: Record<string, any>;
+export interface YamlTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "yaml",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
     options?: YamlTargetOptions;
 }
 
-export interface TomlTargetNoSchema extends BaseTargetNoSchema {
-    type: "toml";
-    variables: Record<string, any>;
-}
+export interface TomlTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "toml",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {}
 
-export interface IniTargetNoSchema extends BaseTargetNoSchema {
-    type: "ini";
-    variables: Record<string, any>;
+export interface IniTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "ini",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
     options?: IniTargetOptions;
 }
 
-export interface PropertiesTargetNoSchema extends BaseTargetNoSchema {
-    type: "properties";
-    variables: Record<string, any>;
+export interface PropertiesTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "properties",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
     options?: PropertiesTargetOptions;
 }
 
-export interface EnvTargetNoSchema extends BaseTargetNoSchema {
-    type: "env";
-    variables: Record<string, any>;
+export interface EnvTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "env",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {}
+
+export interface XmlTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "xml",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
+    options?: XmlTargetOptions;
 }
 
-export interface XmlTargetNoSchema extends BaseTargetNoSchema {
-    type: "xml";
-    variables: Record<string, any>;
-    config?: XmlTargetOptions;
-}
-
-export interface CsvTargetNoSchema extends BaseTargetNoSchema {
-    type: "csv";
-    variables: Record<string, any>[];
+export interface CsvTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "csv",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
     options?: CsvTargetOptions;
 }
 
-export interface CsonTargetNoSchema extends BaseTargetNoSchema {
-    type: "cson";
-    variables: Record<string, any>;
-}
+export interface CsonTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "cson",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {}
 
-export interface TemplateTargetNoSchema extends BaseTargetNoSchema {
-    type: "template";
+export interface TemplateTargetDefinition<
+    TSchema = any,
+    TVariables = InferVariablesType<TSchema>,
+> extends BaseTargetDefinition<
+        "template",
+        TSchema,
+        ValidateSchemaVariables<TSchema, TVariables>
+    > {
+    engine: TemplateTargetEngine;
     template: string;
-    engine?: TemplateTargetEngine;
-    variables: Record<string, any>;
 }
 
-export type Target<TSchema extends SchemaType = Record<string, any>> =
-    TSchema extends z.ZodType
-        ?
-              | JsonTarget<TSchema>
-              | Json5Target<TSchema>
-              | JsoncTarget<TSchema>
-              | HjsonTarget<TSchema>
-              | YamlTarget<TSchema>
-              | TomlTarget<TSchema>
-              | IniTarget<TSchema>
-              | PropertiesTarget<TSchema>
-              | EnvTarget<TSchema>
-              | XmlTarget<TSchema>
-              | CsvTarget<TSchema>
-              | CsonTarget<TSchema>
-              | TemplateTarget<TSchema>
-        : TSchema extends Record<string, any>
-          ?
-                | JsonTargetNoSchema
-                | Json5TargetNoSchema
-                | JsoncTargetNoSchema
-                | HjsonTargetNoSchema
-                | YamlTargetNoSchema
-                | TomlTargetNoSchema
-                | IniTargetNoSchema
-                | PropertiesTargetNoSchema
-                | EnvTargetNoSchema
-                | XmlTargetNoSchema
-                | CsvTargetNoSchema
-                | CsonTargetNoSchema
-                | TemplateTargetNoSchema
-          : never;
+export interface TargetTypeMap {
+    json: JsonTargetDefinition;
+    json5: Json5TargetDefinition;
+    jsonc: JsoncTargetDefinition;
+    hjson: HjsonTargetDefinition;
+    yaml: YamlTargetDefinition;
+    toml: TomlTargetDefinition;
+    ini: IniTargetDefinition;
+    properties: PropertiesTargetDefinition;
+    env: EnvTargetDefinition;
+    xml: XmlTargetDefinition;
+    csv: CsvTargetDefinition;
+    cson: CsonTargetDefinition;
+    template: TemplateTargetDefinition;
+}
 
-export type Targets<T extends Record<string, SchemaType>> = {
-    [K in keyof T]: Target<T[K]>;
-};
+export type AnyTarget = TargetTypeMap[keyof TargetTypeMap];
+
+// Factory functions for better DX
+export function json<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: JsonTargetOptions;
+    generate_meta?: boolean;
+}): JsonTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function json<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    options?: JsonTargetOptions;
+    generate_meta?: boolean;
+}): JsonTargetDefinition<TVariables, TVariables>;
+
+export function json(config: any): any {
+    return {type: "json", ...config};
+}
+
+export function json5<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: Json5TargetOptions;
+    generate_meta?: boolean;
+}): Json5TargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function json5<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    options?: Json5TargetOptions;
+    generate_meta?: boolean;
+}): Json5TargetDefinition<TVariables, TVariables>;
+
+export function json5(config: any): any {
+    return {type: "json5", ...config};
+}
+
+export function jsonc<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: JsoncTargetOptions;
+    generate_meta?: boolean;
+}): JsoncTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function jsonc<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    options?: JsoncTargetOptions;
+    generate_meta?: boolean;
+}): JsoncTargetDefinition<TVariables, TVariables>;
+
+export function jsonc(config: any): any {
+    return {type: "jsonc", ...config};
+}
+
+export function hjson<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: HjsonTargetOptions;
+    generate_meta?: boolean;
+}): HjsonTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function hjson<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    options?: HjsonTargetOptions;
+    generate_meta?: boolean;
+}): HjsonTargetDefinition<TVariables, TVariables>;
+
+export function hjson(config: any): any {
+    return {type: "hjson", ...config};
+}
+
+export function yaml<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: YamlTargetOptions;
+    generate_meta?: boolean;
+}): YamlTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function yaml<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    options?: YamlTargetOptions;
+    generate_meta?: boolean;
+}): YamlTargetDefinition<TVariables, TVariables>;
+
+export function yaml(config: any): any {
+    return {type: "yaml", ...config};
+}
+
+export function toml<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    generate_meta?: boolean;
+}): TomlTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function toml<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    generate_meta?: boolean;
+}): TomlTargetDefinition<TVariables, TVariables>;
+
+export function toml(config: any): any {
+    return {type: "toml", ...config};
+}
+
+export function ini<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: IniTargetOptions;
+    generate_meta?: boolean;
+}): IniTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function ini<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    options?: IniTargetOptions;
+    generate_meta?: boolean;
+}): IniTargetDefinition<TVariables, TVariables>;
+
+export function ini(config: any): any {
+    return {type: "ini", ...config};
+}
+
+export function properties<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: PropertiesTargetOptions;
+    generate_meta?: boolean;
+}): PropertiesTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function properties<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    options?: PropertiesTargetOptions;
+    generate_meta?: boolean;
+}): PropertiesTargetDefinition<TVariables, TVariables>;
+
+export function properties(config: any): any {
+    return {type: "properties", ...config};
+}
+
+export function env<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    generate_meta?: boolean;
+}): EnvTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function env<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    generate_meta?: boolean;
+}): EnvTargetDefinition<TVariables, TVariables>;
+
+export function env(config: any): any {
+    return {type: "env", ...config};
+}
+
+export function xml<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: XmlTargetOptions;
+    generate_meta?: boolean;
+}): XmlTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function xml<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    options?: XmlTargetOptions;
+    generate_meta?: boolean;
+}): XmlTargetDefinition<TVariables, TVariables>;
+
+export function xml(config: any): any {
+    return {type: "xml", ...config};
+}
+
+export function csv<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    options?: CsvTargetOptions;
+    generate_meta?: boolean;
+}): CsvTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function csv<TVariables extends Record<string, any>[]>(config: {
+    path: string;
+    variables: TVariables;
+    options?: CsvTargetOptions;
+    generate_meta?: boolean;
+}): CsvTargetDefinition<TVariables, TVariables>;
+
+export function csv(config: any): any {
+    return {type: "csv", ...config};
+}
+
+export function cson<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    generate_meta?: boolean;
+}): CsonTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function cson<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    generate_meta?: boolean;
+}): CsonTargetDefinition<TVariables, TVariables>;
+
+export function cson(config: any): any {
+    return {type: "cson", ...config};
+}
+
+export function template<TSchema extends z.ZodType>(config: {
+    path: string;
+    schema: TSchema;
+    variables: z.infer<TSchema>;
+    engine: TemplateTargetEngine;
+    template: string;
+    generate_meta?: boolean;
+}): TemplateTargetDefinition<TSchema, z.infer<TSchema>>;
+
+export function template<TVariables extends Record<string, any>>(config: {
+    path: string;
+    variables: TVariables;
+    engine: TemplateTargetEngine;
+    template: string;
+    generate_meta?: boolean;
+}): TemplateTargetDefinition<TVariables, TVariables>;
+
+export function template(config: any): any {
+    return {type: "template", ...config};
+}

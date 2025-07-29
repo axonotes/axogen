@@ -2,13 +2,17 @@ import {Command} from "commander";
 import {z} from "zod";
 import {commandRunner} from "./runner";
 import {pretty} from "../utils/pretty";
-import {zodIssuesToErrors} from "../utils/helpers.ts";
 import type {
-    CommandGlobalContext,
     ZodAnyCommand,
     ZodAxogenConfig,
-    ZodSchemaCommand,
+    ZodGlobalCommandContext,
 } from "../config/types";
+import {
+    analyzeZodSchema,
+    getCommandHelp,
+    isAdvancedCommand,
+    isGroupCommand,
+} from "./zod_helpers.ts";
 
 export function buildDynamicCommands(
     cli: Command,
@@ -34,78 +38,61 @@ function createCommandFromConfig(
         cmd.description(help);
     }
 
-    if (isSchemaCommand(command)) {
-        return buildSchemaCommand(cmd, command, config);
-    }
-
-    return buildSimpleCommand(cmd, command, config);
-}
-
-function buildSchemaCommand(
-    cmd: Command,
-    command: ZodSchemaCommand,
-    config: ZodAxogenConfig
-): Command {
-    // Add options - Commander.js just handles basic parsing
-    if (command.options) {
-        for (const [optionName, zodSchema] of Object.entries(command.options)) {
-            addBasicOption(cmd, optionName, zodSchema);
+    if (isAdvancedCommand(command)) {
+        // Add options - Commander.js just handles basic parsing
+        if (command.options) {
+            for (const [optionName, zodSchema] of Object.entries(
+                command.options
+            )) {
+                addBasicOption(cmd, optionName, zodSchema);
+            }
         }
-    }
 
-    // Add arguments - Commander.js just handles basic parsing
-    if (command.args) {
-        for (const [argName, zodSchema] of Object.entries(command.args)) {
-            addBasicArgument(cmd, argName, zodSchema);
+        // Add arguments - Commander.js just handles basic parsing
+        if (command.args) {
+            for (const [argName, zodSchema] of Object.entries(command.args)) {
+                addBasicArgument(cmd, argName, zodSchema);
+            }
         }
+    } else {
+        cmd.allowUnknownOption(true);
+        cmd.allowExcessArguments(true);
     }
 
-    cmd.action(async (...args) => {
-        const commandObj = args[args.length - 1];
-        const rawOptions = commandObj.opts();
-        const rawArgs = args.slice(0, -1);
+    if (isGroupCommand(command)) {
+        for (const [n, c] of Object.entries(command.commands)) {
+            cmd.addCommand(createCommandFromConfig(n, c, config));
+        }
+    } else {
+        cmd.action(async (...args) => {
+            const commandObj = args[args.length - 1];
+            const options = commandObj.opts();
+            const positionalArgs = args.slice(0, -1);
 
-        try {
-            // Let Zod handle ALL the type conversion and validation
-            const validatedOptions = command.options
-                ? validateOptionsWithZod(rawOptions, command.options)
-                : {};
-
-            const validatedArgs = command.args
-                ? validateArgsWithZod(rawArgs, command.args)
-                : {};
-
-            const global = createGlobalContext(
-                commandObj.parent?.opts?.()?.verbose
-            );
-
-            await command.exec({
-                options: validatedOptions,
-                args: validatedArgs,
-                global,
-                config,
-            });
-        } catch (error) {
-            if (error instanceof z.ZodError) {
-                const validationErrors = zodIssuesToErrors(error.issues);
-
-                pretty.validation.errorGroup(
-                    "Command validation failed",
-                    validationErrors
-                );
-                console.log();
-                pretty.info(
-                    `${pretty.text.dimmed("💡 Check your command arguments and options.")}`
+            try {
+                const global = createGlobalContext(
+                    commandObj.parent?.opts?.()?.verbose
                 );
 
+                const result = await commandRunner.executeCommand(command, {
+                    config,
+                    global,
+                    args: positionalArgs,
+                    options,
+                });
+
+                if (!result.success) {
+                    pretty.error(`Command failed: ${result.error}`);
+                    process.exit(result.exitCode || 1);
+                }
+            } catch (error) {
+                pretty.error(
+                    `Command failed: ${error instanceof Error ? error.message : error}`
+                );
                 process.exit(1);
             }
-            pretty.error(
-                `Command failed: ${error instanceof Error ? error.message : error}`
-            );
-            process.exit(1);
-        }
-    });
+        });
+    }
 
     return cmd;
 }
@@ -166,202 +153,9 @@ function addBasicArgument(
     }
 }
 
-// =============================================
-// ZOD-BASED VALIDATION
-// =============================================
-
-function validateOptionsWithZod(
-    rawOptions: Record<string, any>,
-    optionsSchema: Record<string, z.ZodType>
-): any {
-    // Preprocess: Convert comma-separated strings to arrays for array schemas
-    const processedOptions = {...rawOptions};
-
-    for (const [key, schema] of Object.entries(optionsSchema)) {
-        const info = analyzeZodSchema(schema);
-        if (
-            info.baseType === "array" &&
-            typeof processedOptions[key] === "string"
-        ) {
-            // Split comma-separated string into array
-            processedOptions[key] = processedOptions[key]
-                .split(",")
-                .map((s: string) => s.trim());
-        }
-    }
-
-    // Let Zod handle all type conversion, defaults, validation
-    return z.object(optionsSchema).parse(processedOptions);
-}
-
-function validateArgsWithZod(
-    rawArgs: any[],
-    argsSchema: Record<string, z.ZodType>
-): any {
-    const argNames = Object.keys(argsSchema);
-    const argsObject: Record<string, any> = {};
-
-    // Map positional args to schema keys
-    for (let i = 0; i < argNames.length; i++) {
-        const argName = argNames[i];
-        const value = rawArgs[i];
-        if (value !== undefined) {
-            argsObject[argName] = value;
-        }
-    }
-
-    try {
-        // Let Zod handle all type conversion, defaults, validation
-        return z.object(argsSchema).parse(argsObject);
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            throw new z.ZodError([
-                ...error.issues.map((issue) => ({
-                    ...issue,
-                    path: ["args", ...issue.path],
-                })),
-            ]);
-        }
-        throw error;
-    }
-}
-
-// =============================================
-// SIMPLIFIED SCHEMA ANALYSIS
-// =============================================
-
-interface ZodSchemaInfo {
-    baseType: string;
-    isOptional: boolean;
-    description?: string;
-}
-
-function analyzeZodSchema(schema: z.ZodType): ZodSchemaInfo {
-    let currentSchema = schema;
-    let isOptional = false;
-    let description: string | undefined = undefined;
-
-    // Traverse wrapper schemas only - stop at core types
-    while (currentSchema) {
-        // Extract description
-        if (!description) {
-            description = extractDescription(currentSchema);
-        }
-
-        // Check for optional/nullable markers
-        const type = getZodType(currentSchema);
-
-        if (type === "optional" || type === "nullable" || type === "default") {
-            isOptional = true;
-            // These are wrapper types - unwrap them
-            if (canUnwrap(currentSchema)) {
-                currentSchema = currentSchema.unwrap();
-            } else {
-                break;
-            }
-        } else {
-            // This is a core type (array, string, number, etc.) - stop here!
-            break;
-        }
-    }
-
-    // Get final base type
-    const baseType = getZodType(currentSchema);
-
-    return {
-        baseType,
-        isOptional,
-        description,
-    };
-}
-
-function getZodType(schema: z.ZodType): string {
-    return schema._zod?.def?.type || "unknown";
-}
-
-function extractDescription(schema: z.ZodType): string | undefined {
-    try {
-        const meta = schema.meta();
-        if (meta && typeof meta.description === "string") {
-            return meta.description;
-        }
-    } catch {
-        // Schema doesn't support meta
-    }
-    return undefined;
-}
-
-function canUnwrap(
-    schema: z.ZodType
-): schema is z.ZodType & {unwrap(): z.ZodType} {
-    return typeof (schema as any).unwrap === "function";
-}
-
-// =============================================
-// REMAINING FUNCTIONS
-// =============================================
-
-function buildSimpleCommand(
-    cmd: Command,
-    command: ZodAnyCommand,
-    config: ZodAxogenConfig
-): Command {
-    cmd.allowUnknownOption(true);
-    cmd.allowExcessArguments(true);
-
-    cmd.action(async (...args) => {
-        const commandObj = args[args.length - 1];
-        const options = commandObj.opts();
-        const positionalArgs = args.slice(0, -1);
-
-        try {
-            const global = createGlobalContext(
-                commandObj.parent?.opts?.()?.verbose
-            );
-
-            const result = await commandRunner.executeCommand(command, {
-                config,
-                global,
-                args: positionalArgs,
-                options,
-            });
-
-            if (!result.success) {
-                pretty.error(`Command failed: ${result.error}`);
-                process.exit(result.exitCode || 1);
-            }
-        } catch (error) {
-            pretty.error(
-                `Command failed: ${error instanceof Error ? error.message : error}`
-            );
-            process.exit(1);
-        }
-    });
-
-    return cmd;
-}
-
-function getCommandHelp(command: ZodAnyCommand): string | undefined {
-    if (
-        typeof command === "string" ||
-        typeof command === "function" ||
-        command._type === "function"
-    ) {
-        return undefined;
-    }
-    return command.help;
-}
-
-function isSchemaCommand(command: ZodAnyCommand): command is ZodSchemaCommand {
-    return (
-        typeof command === "object" &&
-        command !== null &&
-        "_type" in command &&
-        command._type === "schema"
-    );
-}
-
-function createGlobalContext(verbose: boolean = false): CommandGlobalContext {
+function createGlobalContext(
+    verbose: boolean = false
+): ZodGlobalCommandContext {
     return {
         cwd: process.cwd(),
         process_env: process.env,

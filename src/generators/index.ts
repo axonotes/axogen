@@ -17,7 +17,7 @@ import {
 import {hasSecrets, unwrapUnsafe} from "../utils/secrets.ts";
 import {pretty} from "../utils/pretty.ts";
 import {isGitIgnored} from "../git/ignore-checker.ts";
-import {type ZodTarget} from "../config/types";
+import {type ZodAnyTarget} from "../config/types";
 import {createHeaderComments, createMetadata} from "./metadata.ts";
 
 export {
@@ -50,10 +50,10 @@ export class TargetGenerator {
     private templateGenerator = new TemplateGenerator();
 
     private isSafe(
-        target: ZodTarget,
+        target: ZodAnyTarget,
         targetName: string,
         fullPath: string
-    ): ZodTarget {
+    ): ZodAnyTarget {
         const secretsAnalysis = hasSecrets(target.variables, targetName);
 
         // Early return if no secrets detected
@@ -102,7 +102,7 @@ export class TargetGenerator {
     /** Generate content for a target */
     async generate(
         targetName: string,
-        target: ZodTarget,
+        target: ZodAnyTarget,
         options: GenerateOptions = {}
     ): Promise<{path: string; content: string}> {
         const {baseDir = process.cwd()} = options;
@@ -149,7 +149,7 @@ export class TargetGenerator {
 
     private async generateContent(
         variables: Record<string, any>,
-        target: ZodTarget,
+        target: ZodAnyTarget,
         baseDir: string
     ): Promise<string> {
         switch (target.type) {
@@ -189,7 +189,7 @@ export class TargetGenerator {
         }
     }
 
-    private getCommentHeader(target: ZodTarget): string {
+    private getCommentHeader(target: ZodAnyTarget): string {
         switch (target.type) {
             case "json":
                 return "";
@@ -240,7 +240,7 @@ export class TargetGenerator {
     /** Generate and write target to file */
     async generateAndWrite(
         targetName: string,
-        target: ZodTarget,
+        target: ZodAnyTarget,
         options: GenerateOptions = {}
     ): Promise<string> {
         const {dryRun = false} = options;
@@ -261,7 +261,7 @@ export class TargetGenerator {
 
     /** Generate multiple targets */
     async generateMultiple(
-        targets: Record<string, ZodTarget>,
+        targets: Record<string, ZodAnyTarget>,
         options: GenerateOptions = {}
     ): Promise<
         Array<{name: string; path: string; success: boolean; error?: string}>

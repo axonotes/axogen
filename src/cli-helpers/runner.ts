@@ -1,19 +1,29 @@
 import {liveExec} from "./";
 import type {
-    CommandGlobalContext,
-    SimpleCommandContext,
-    StringCommand,
     ZodAnyCommand,
     ZodAxogenConfig,
-    ZodCommandGroup,
-    ZodFunctionCommand,
+    ZodGroupCommand,
     ZodStringCommand,
+    ZodGlobalCommandContext,
+    ZodSimpleCommandContext,
+    ZodAdvancedCommand,
+    AxogenConfig,
 } from "../config/types";
 import {pretty} from "../utils/pretty";
+import {zodIssuesToErrors} from "../utils/helpers.ts";
+import * as z from "zod";
+import {
+    getCommandHelp,
+    isAdvancedCommand,
+    isGroupCommand,
+    isStringCommand,
+    validateArgsWithZod,
+    validateOptionsWithZod,
+} from "./zod_helpers.ts";
 
 export interface RunCommandOptions {
     config: ZodAxogenConfig;
-    global: CommandGlobalContext;
+    global: ZodGlobalCommandContext;
     args?: string[];
     options?: Record<string, any>;
 }
@@ -38,18 +48,18 @@ export class CommandRunner {
                 return await this.executeFunctionCommand(command, options);
             }
 
-            if (this.isStringCommand(command)) {
+            if (isStringCommand(command)) {
                 return await this.executeStringCommand(
                     command.command,
                     options
                 );
             }
 
-            if (this.isFunctionCommand(command)) {
-                return await this.executeFunctionCommand(command.exec, options);
+            if (isAdvancedCommand(command)) {
+                return await this.executeAdvancedCommand(command, options);
             }
 
-            if (this.isCommandGroup(command)) {
+            if (isGroupCommand(command)) {
                 return await this.executeCommandGroup(command, options);
             }
 
@@ -183,7 +193,7 @@ export class CommandRunner {
         options: RunCommandOptions
     ): Promise<CommandResult> {
         try {
-            const context: SimpleCommandContext = {
+            const context: ZodSimpleCommandContext = {
                 global: options.global,
                 config: options.config,
             };
@@ -198,8 +208,47 @@ export class CommandRunner {
         }
     }
 
+    private async executeAdvancedCommand(
+        command: ZodAdvancedCommand,
+        options: RunCommandOptions
+    ): Promise<CommandResult> {
+        try {
+            const validatedOptions = command.options
+                ? validateOptionsWithZod(options.options || {}, command.options)
+                : {};
+
+            const validatedArgs = command.args
+                ? validateArgsWithZod(options.args || [], command.args)
+                : {};
+
+            await command.exec({
+                global: options.global,
+                config: options.config as AxogenConfig,
+                options: validatedOptions,
+                args: validatedArgs,
+            });
+            return {success: true};
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                const validationErrors = zodIssuesToErrors(error.issues);
+
+                pretty.validation.errorGroup(
+                    `Command validation failed: ${command.help || "No description"}`,
+                    validationErrors
+                );
+
+                console.log(); // Add spacing
+                return {success: false, error: "Validation failed"};
+            }
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    }
+
     private async executeCommandGroup(
-        group: ZodCommandGroup,
+        group: ZodGroupCommand,
         options: RunCommandOptions
     ): Promise<CommandResult> {
         const [subcommandName, ...remainingArgs] = options.args || [];
@@ -207,17 +256,17 @@ export class CommandRunner {
         if (!subcommandName) {
             if (group.help) {
                 pretty.info(group.help);
-            } else {
-                pretty.info("Available subcommands:");
+                console.log(); // Add spacing
             }
 
+            pretty.info("Available subcommands:");
             console.log(); // Add spacing
 
             // Create a table-like display for commands
             const commandRows: Array<{key: string; value: string}> = [];
 
             for (const [name, command] of Object.entries(group.commands)) {
-                const help = this.getCommandHelp(command);
+                const help = getCommandHelp(command);
                 commandRows.push({
                     key: name,
                     value: help || "No description available",
@@ -245,29 +294,6 @@ export class CommandRunner {
             ...options,
             args: remainingArgs,
         });
-    }
-
-    private getCommandHelp(command: ZodAnyCommand): string | undefined {
-        if (
-            typeof command === "string" ||
-            typeof command === "function" ||
-            command._type === "function"
-        ) {
-            return undefined;
-        }
-        return command.help;
-    }
-
-    private isStringCommand(command: any): command is ZodStringCommand {
-        return command && command._type === "string";
-    }
-
-    private isFunctionCommand(command: any): command is ZodFunctionCommand {
-        return command && command._type === "function";
-    }
-
-    private isCommandGroup(command: any): command is ZodCommandGroup {
-        return command && command._type === "group";
     }
 }
 

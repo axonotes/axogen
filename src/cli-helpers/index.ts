@@ -1,7 +1,6 @@
 export * from "./runner";
 
-import {spawn, ChildProcess} from "node:child_process";
-import {EventEmitter} from "node:events";
+import {spawn} from "node:child_process";
 import {pretty} from "../utils/pretty";
 
 /**
@@ -244,7 +243,7 @@ export function liveExec(
         });
 
         // Handle child process being killed
-        child.on("exit", (code, signal) => {
+        child.on("exit", (_code, signal) => {
             if (signal && signal !== "SIGTERM" && signal !== "SIGKILL") {
                 wasTerminated = true;
             }
@@ -259,51 +258,6 @@ export function liveExec(
         process.once("SIGTERM", processExitHandler);
         process.once("uncaughtException", processExitHandler);
     });
-}
-
-/**
- * Interactive shell that maintains state across commands
- */
-export class InteractiveShell extends EventEmitter {
-    private currentProcess: ChildProcess | null = null;
-    private isLive = false;
-
-    async execute(
-        command: string,
-        live = false
-    ): Promise<
-        LiveExecResult | {stdout: string; stderr: string; exitCode: number}
-    > {
-        if (live) {
-            return this.executeLive(command);
-        } else {
-            return executeCommand(command);
-        }
-    }
-
-    async executeLive(
-        command: string,
-        options?: LiveExecOptions
-    ): Promise<LiveExecResult> {
-        this.isLive = true;
-        this.emit("liveStart", command);
-
-        try {
-            const result = await liveExec(command, options);
-            this.emit("liveEnd", result);
-            return result;
-        } finally {
-            this.isLive = false;
-        }
-    }
-
-    isInLiveMode(): boolean {
-        return this.isLive;
-    }
-
-    getCurrentProcess(): ChildProcess | null {
-        return this.currentProcess;
-    }
 }
 
 export const exec = executeCommand;

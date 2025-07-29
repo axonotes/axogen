@@ -1,206 +1,133 @@
+/**
+ * Where commands.ts is for DX, this file is for Zod validation.
+ * It defines the actual Zod schemas for the commands and validates them.
+ * It is used to ensure that the commands are correctly defined and can be
+ * used in the Axogen config.
+ */
+
 import * as z from "zod";
 import type {
     AnyCommand,
-    CommandGroup,
-    FunctionCommand,
-    ParallelCommand,
-    SchemaCommand,
-    SchemaCommandFunction,
-    SequentialCommand,
+    CommandFunction,
     SimpleCommandFunction,
-    StringCommand,
-    TypeArgs,
-    TypeOptions,
-    TypeTargets,
 } from "./commands.ts";
-import {zodIssuesToErrors} from "../../utils/helpers.ts";
-import {pretty} from "../../utils/pretty.ts";
+import {axogenConfigSchema} from "./zod_config.ts";
 
-export const stringCommandSchema: z.ZodType<StringCommand> = z.object({
-    _type: z.literal("string"),
-    command: z.string(),
-    help: z.string().optional(),
+const helpSchema = z
+    .string()
+    .describe("A description of the command, used for help output")
+    .optional();
+
+export const globalCommandContextSchema = z.object({
+    cwd: z.string().describe("The current working directory"),
+    process_env: z
+        .record(z.string(), z.any())
+        .describe("The process environment variables"),
+    verbose: z
+        .boolean()
+        .describe("Whether the command is running in verbose mode"),
 });
 
-export const schemaCommandSchema: z.ZodType<SchemaCommand> = z.object({
-    _type: z.literal("schema"),
-    help: z.string().optional(),
-    options: z.record(z.string(), z.any()).optional(),
-    args: z.record(z.string(), z.any()).optional(),
-    exec: z.custom<SchemaCommandFunction>(
-        (value) => typeof value === "function"
+export const zodTypeSchema = z.custom<z.ZodType>((val) => {
+    return val && typeof val === "object" && ("_zod" in val || "_def" in val);
+});
+
+export const commandContextSchema = z.object({
+    options: z
+        .record(z.string(), zodTypeSchema)
+        .describe("The options for the command, as a record of Zod types")
+        .default({}),
+    args: z
+        .record(z.string(), zodTypeSchema)
+        .describe("The arguments for the command, as a record of Zod types")
+        .default({}),
+    global: globalCommandContextSchema.describe(
+        "The global context for the command, including cwd and env"
     ),
+    config: axogenConfigSchema,
 });
 
-export const functionCommandSchema: z.ZodType<FunctionCommand> = z.object({
-    _type: z.literal("function"),
-    help: z.string().optional(),
-    exec: z.custom<SimpleCommandFunction>(
-        (value) => typeof value === "function"
+export const simpleCommandContextSchema = z.object({
+    global: globalCommandContextSchema.describe(
+        "The global context for the command, including cwd and env"
     ),
+    config: axogenConfigSchema,
 });
 
-export const parallelCommandSchema: z.ZodType<ParallelCommand> = z.object({
-    _type: z.literal("parallel"),
-    help: z.string().optional(),
-    commands: z.array(z.lazy(() => commandSchema)),
+export const stringCommandSchema = z.object({
+    type: z
+        .literal("string")
+        .describe("The type of the command, in this case a string command"),
+    help: helpSchema,
+    command: z.string().describe("The command to be executed, as a string"),
 });
 
-export const sequentialCommandSchema: z.ZodType<SequentialCommand> = z.object({
-    _type: z.literal("sequential"),
-    help: z.string().optional(),
-    commands: z.array(z.lazy(() => commandSchema)),
+export const groupCommandSchema = z.object({
+    type: z
+        .literal("group")
+        .describe("The type of the command, in this case a group command"),
+    help: helpSchema,
+    commands: z
+        .record(
+            z.string(),
+            z.lazy(() => anyCommandSchema)
+        )
+        .describe("The commands in the group"),
 });
 
-export const commandGroupSchema: z.ZodType<CommandGroup> = z.object({
-    _type: z.literal("group"),
-    help: z.string().optional(),
-    commands: z.record(
-        z.string(),
-        z.lazy(() => commandSchema)
-    ),
+export const advancedCommandSchema = z.object({
+    type: z
+        .literal("advanced")
+        .describe("The type of the command, in this case an advanced command"),
+    help: helpSchema,
+    options: z
+        .record(z.string(), zodTypeSchema)
+        .describe("The options for the command, as a record of Zod types")
+        .default({}),
+    args: z
+        .record(z.string(), zodTypeSchema)
+        .describe("The arguments for the command, as a record of Zod types")
+        .default({}),
+    exec: z
+        .custom<CommandFunction>((val) => {
+            return typeof val === "function" && val.length === 1;
+        })
+        .describe("The function to execute for the command"),
 });
 
-export const commandSchema: z.ZodType<AnyCommand> = z.union([
-    z.string(),
+export const simpleStringCommandSchema = z
+    .string()
+    .describe("A simple command string, which is executed directly");
+export const simpleCommandFunctionSchema = z
+    .custom<SimpleCommandFunction>((val) => {
+        return typeof val === "function" && val.length === 1;
+    })
+    .describe("A simple command function that takes a context object");
+
+export const anyCommandSchema: z.ZodType<AnyCommand> = z.union([
+    simpleStringCommandSchema,
+    simpleCommandFunctionSchema,
     stringCommandSchema,
-    schemaCommandSchema,
-    functionCommandSchema,
-    commandGroupSchema,
+    groupCommandSchema,
+    advancedCommandSchema,
 ]);
 
+// --- Exported Types ---
+
+export type ZodAnyCommand = z.infer<typeof anyCommandSchema>;
+
 export type ZodStringCommand = z.infer<typeof stringCommandSchema>;
-export type ZodSchemaCommand = z.infer<typeof schemaCommandSchema>;
-export type ZodFunctionCommand = z.infer<typeof functionCommandSchema>;
-export type ZodParallelCommand = z.infer<typeof parallelCommandSchema>;
-export type ZodSequentialCommand = z.infer<typeof sequentialCommandSchema>;
-export type ZodCommandGroup = z.infer<typeof commandGroupSchema>;
-export type ZodAnyCommand = z.infer<typeof commandSchema>;
+export type ZodGroupCommand = z.infer<typeof groupCommandSchema>;
+export type ZodAdvancedCommand = z.infer<typeof advancedCommandSchema>;
+export type ZodSimpleStringCommand = z.infer<typeof simpleStringCommandSchema>;
+export type ZodSimpleCommandFunction = z.infer<
+    typeof simpleCommandFunctionSchema
+>;
 
-// Helper functions to create and validate commands
-function handleError(
-    error: z.ZodError | Error | unknown,
-    title: string
-): never {
-    if (error instanceof z.ZodError) {
-        const validationErrors = zodIssuesToErrors(error.issues);
-
-        pretty.validation.errorGroup(
-            `Command validation failed for "${pretty.text.accent(title)}"`,
-            validationErrors
-        );
-
-        console.log();
-
-        throw new Error("Command validation failed");
-    }
-
-    throw new Error(
-        `Failed to validate command "${pretty.text.accent(title)}": ${
-            error instanceof Error ? error.message : String(error)
-        }`
-    );
-}
-
-export function stringCommand(command: string, help?: string): StringCommand {
-    try {
-        return stringCommandSchema.parse({
-            _type: "string",
-            command,
-            help,
-        });
-    } catch (error) {
-        handleError(error, command);
-    }
-}
-
-export function functionCommand(exec: SchemaCommandFunction): FunctionCommand {
-    try {
-        return functionCommandSchema.parse({
-            _type: "function",
-            exec,
-        });
-    } catch (error) {
-        handleError(error, exec.name || "anonymous function");
-    }
-}
-
-export function defineCommand<
-    TOptions extends TypeOptions = TypeOptions,
-    TArgs extends TypeArgs = TypeArgs,
-    TTargets extends TypeTargets = TypeTargets,
->(definition: {
-    help?: string;
-    options?: TOptions;
-    args?: TArgs;
-    exec: SchemaCommandFunction<TOptions, TArgs, TTargets>;
-}): SchemaCommand {
-    try {
-        return schemaCommandSchema.parse({
-            _type: "schema",
-            help: definition.help,
-            options: definition.options,
-            args: definition.args,
-            exec: definition.exec,
-        });
-    } catch (error) {
-        handleError(
-            error,
-            definition.exec.name || definition.help || "anonymous function"
-        );
-    }
-}
-
-export function commandGroup(
-    commands: Record<string, AnyCommand>,
-    help?: string
-): CommandGroup {
-    try {
-        return commandGroupSchema.parse({
-            _type: "group",
-            help,
-            commands,
-        });
-    } catch (error) {
-        handleError(error, help || "command group");
-    }
-}
-
-export function parallelCommand(
-    commands: AnyCommand[],
-    help?: string
-): ParallelCommand {
-    try {
-        return parallelCommandSchema.parse({
-            _type: "parallel",
-            help,
-            commands,
-        });
-    } catch (error) {
-        handleError(error, help || "parallel command");
-    }
-}
-
-export function sequentialCommand(
-    commands: AnyCommand[],
-    help?: string
-): SequentialCommand {
-    try {
-        return sequentialCommandSchema.parse({
-            _type: "sequential",
-            help,
-            commands,
-        });
-    } catch (error) {
-        handleError(error, help || "sequential command");
-    }
-}
-
-export const command = {
-    string: stringCommand,
-    function: functionCommand,
-    define: defineCommand,
-    group: commandGroup,
-    parallel: parallelCommand,
-    sequential: sequentialCommand,
-} as const;
+export type ZodCommandContext = z.infer<typeof commandContextSchema>;
+export type ZodSimpleCommandContext = z.infer<
+    typeof simpleCommandContextSchema
+>;
+export type ZodGlobalCommandContext = z.infer<
+    typeof globalCommandContextSchema
+>;
