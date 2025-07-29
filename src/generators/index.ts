@@ -1,3 +1,10 @@
+/**
+ * Main target generator module for Axogen.
+ * Provides the core functionality for generating configuration files in various formats
+ * including JSON, YAML, TOML, XML, CSV, and template-based generation.
+ * Handles security checks for secrets detection and Git ignore validation.
+ */
+
 import {writeFile, mkdir} from "node:fs/promises";
 import {dirname, resolve} from "node:path";
 import {
@@ -28,6 +35,11 @@ export {
     TemplateGenerator,
 };
 
+/**
+ * Configuration options for target generation.
+ * Controls the behavior of generation processes including dry-run mode
+ * and base directory resolution.
+ */
 export interface GenerateOptions {
     /** Show what would be generated without writing files */
     dryRun?: boolean;
@@ -35,20 +47,50 @@ export interface GenerateOptions {
     baseDir?: string;
 }
 
+/**
+ * Main target generator class that orchestrates the generation of configuration files
+ * in various formats. Handles secrets detection, Git ignore validation, metadata
+ * injection, and format-specific header comments.
+ *
+ * Supports multiple output formats including JSON, YAML, TOML, XML, CSV, INI, Properties,
+ * environment variables, and template-based generation.
+ */
 export class TargetGenerator {
+    /** Generator for environment variable files */
     private envGenerator = new EnvGenerator();
+    /** Generator for JSON files */
     private jsonGenerator = new JsonGenerator();
+    /** Generator for JSON5 files */
     private json5Generator = new Json5Generator();
+    /** Generator for HJSON files */
     private hjsonGenerator = new HjsonGenerator();
+    /** Generator for YAML files */
     private yamlGenerator = new YamlGenerator();
+    /** Generator for TOML files */
     private tomlGenerator = new TomlGenerator();
+    /** Generator for INI files */
     private iniGenerator = new IniGenerator();
+    /** Generator for Properties files */
     private propertiesGenerator = new PropertiesGenerator();
+    /** Generator for XML files */
     private xmlGenerator = new XmlGenerator();
+    /** Generator for CSV files */
     private csvGenerator = new CsvGenerator();
+    /** Generator for CSON files */
     private csonGenerator = new CsonGenerator();
+    /** Generator for template-based files */
     private templateGenerator = new TemplateGenerator();
 
+    /**
+     * Validates that a target is safe to generate by checking for secrets and Git ignore status.
+     * Unwraps unsafe variables if the target passes security checks.
+     *
+     * @param target - The target configuration to validate
+     * @param targetName - Name of the target for error reporting
+     * @param fullPath - Full file system path where the target will be written
+     * @returns The validated target with unwrapped variables
+     * @throws Error if target contains secrets and is not Git ignored
+     */
     private isSafe(
         target: ZodAnyTarget,
         targetName: string,
@@ -83,6 +125,14 @@ export class TargetGenerator {
         return target;
     }
 
+    /**
+     * Checks if a file path is covered by Git ignore rules.
+     * Gracefully handles errors by assuming files are not ignored if the check fails.
+     *
+     * @param fullPath - Full file system path to check
+     * @param targetName - Name of the target for error reporting
+     * @returns True if the path is Git ignored, false otherwise
+     */
     private checkGitIgnoreStatus(
         fullPath: string,
         targetName: string
@@ -99,7 +149,16 @@ export class TargetGenerator {
         }
     }
 
-    /** Generate content for a target */
+    /**
+     * Generates content for a target configuration without writing to file.
+     * Performs security validation, processes metadata, and adds format-specific headers.
+     *
+     * @param targetName - Name of the target for identification and error reporting
+     * @param target - Target configuration specifying format, variables, and options
+     * @param options - Generation options including dry-run mode and base directory
+     * @returns Promise resolving to an object containing the resolved file path and generated content
+     * @throws Error if target validation fails or generation encounters an error
+     */
     async generate(
         targetName: string,
         target: ZodAnyTarget,
@@ -147,6 +206,16 @@ export class TargetGenerator {
         }
     }
 
+    /**
+     * Generates content using the appropriate format-specific generator.
+     * Routes to the correct generator based on target type and handles unsupported types.
+     *
+     * @param variables - Processed variables to serialize into the target format
+     * @param target - Target configuration including type and format options
+     * @param baseDir - Base directory for resolving relative paths in template generation
+     * @returns Promise resolving to the generated content string
+     * @throws Error if the target type is unsupported
+     */
     private async generateContent(
         variables: Record<string, any>,
         target: ZodAnyTarget,
@@ -189,6 +258,13 @@ export class TargetGenerator {
         }
     }
 
+    /**
+     * Generates format-appropriate header comments for supported file types.
+     * Different formats use different comment syntaxes and some formats don't support comments.
+     *
+     * @param target - Target configuration to determine format and generate appropriate headers
+     * @returns Header comment string for the target format, or empty string if not supported
+     */
     private getCommentHeader(target: ZodAnyTarget): string {
         switch (target.type) {
             case "json":
@@ -237,7 +313,15 @@ export class TargetGenerator {
         }
     }
 
-    /** Generate and write target to file */
+    /**
+     * Generates content for a target and writes it to the file system.
+     * Creates necessary parent directories and handles dry-run mode.
+     *
+     * @param targetName - Name of the target for identification and error reporting
+     * @param target - Target configuration specifying format, variables, and output path
+     * @param options - Generation options including dry-run mode and base directory
+     * @returns Promise resolving to the absolute path where the file was written
+     */
     async generateAndWrite(
         targetName: string,
         target: ZodAnyTarget,
@@ -259,7 +343,15 @@ export class TargetGenerator {
         return path;
     }
 
-    /** Generate multiple targets */
+    /**
+     * Generates multiple targets in a single operation with individual error handling.
+     * Evaluates target conditions and skips targets that don't meet their criteria.
+     * Continues processing other targets even if individual targets fail.
+     *
+     * @param targets - Record of target names to target configurations
+     * @param options - Generation options applied to all targets
+     * @returns Promise resolving to an array of results indicating success/failure for each target
+     */
     async generateMultiple(
         targets: Record<string, ZodAnyTarget>,
         options: GenerateOptions = {}
@@ -301,5 +393,8 @@ export class TargetGenerator {
     }
 }
 
-// Export default instance
+/**
+ * Default instance of TargetGenerator for convenient access.
+ * Pre-instantiated and ready to use for standard target generation operations.
+ */
 export const targetGenerator = new TargetGenerator();

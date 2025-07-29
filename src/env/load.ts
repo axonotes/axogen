@@ -47,6 +47,16 @@ const DEFAULT_CONFIG: LoadEnvConfig = {
     silent: false,
 };
 
+/**
+ * Load and validate environment variables using dotenvx and a Zod schema.
+ * IMPORTANT: Environment variables are injected into process.env BEFORE validation.
+ * If validation fails, the program will exit (if configured to do so), but the variables
+ * will already be available in process.env.
+ * @param schema - Zod schema to validate environment variables against
+ * @param envConfig - Configuration options for loading environment variables
+ * @returns Validated environment variables matching the schema
+ * @throws Error if validation fails or configuration is invalid
+ */
 export function loadEnv<TSchema extends z.ZodType>(
     schema: TSchema,
     envConfig: LoadEnvConfig = {}

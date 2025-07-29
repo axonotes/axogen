@@ -105,11 +105,28 @@ export type AnyCommand<
 
 // ---- Factory Functions ----
 
+/**
+ * Create a string command definition that executes a shell command.
+ * @param config - Configuration object for the command
+ * @param config.command - Shell command string to execute
+ * @param config.help - Optional help text describing what the command does
+ * @returns String command definition
+ */
 export function cmd(config: {
     command: string;
     help?: string;
 }): StringCommandDefinition;
 
+/**
+ * Create an advanced command definition with TypeScript execution function.
+ * Supports typed options, arguments, and full access to configuration and context.
+ * @param config - Configuration object for the advanced command
+ * @param config.exec - TypeScript function to execute when command is run. Receives full context including args, options, and config
+ * @param config.options - Optional Zod schema definitions for command-line options (flags like --verbose)
+ * @param config.args - Optional Zod schema definitions for command arguments (positional parameters)
+ * @param config.help - Optional help text describing what the command does
+ * @returns Advanced command definition with full type safety
+ */
 export function cmd<
     TOptions extends TypeOptions = TypeOptions,
     TArgs extends TypeArgs = TypeArgs,
@@ -159,6 +176,14 @@ export function cmd<
     throw new Error("Invalid configuration object passed to cmd function");
 }
 
+/**
+ * Create a group command definition that contains sub-commands.
+ * Allows organizing related commands under a common namespace.
+ * @param config - Configuration object for the command group
+ * @param config.commands - Record of sub-commands that belong to this group
+ * @param config.help - Optional help text describing what the command group does
+ * @returns Group command definition containing the specified sub-commands
+ */
 export function group<
     TOptions extends TypeOptions,
     TArgs extends TypeArgs,

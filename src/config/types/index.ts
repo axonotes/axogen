@@ -1,3 +1,8 @@
+/**
+ * Main configuration API for Axogen.
+ * This module provides the primary `defineConfig` function and re-exports all configuration types.
+ */
+
 import {type AnyTarget, json} from "./targets.ts";
 import * as z from "zod";
 import {axogenConfigSchema, type ZodAxogenConfig} from "./zod_config.ts";
@@ -6,6 +11,14 @@ import {pretty} from "../../utils/pretty.ts";
 import type {AxogenConfig} from "./config.ts";
 import {cmd} from "./commands.ts";
 
+/**
+ * Define and validate an Axogen configuration.
+ * This is the primary function users call to create their configuration.
+ * Provides full type safety and validation using Zod schemas.
+ * @param config - The Axogen configuration object with targets and commands
+ * @returns Validated configuration object
+ * @throws Error if configuration validation fails
+ */
 export function defineConfig<TTargets extends Record<string, AnyTarget>>(
     config: AxogenConfig<TTargets>
 ): ZodAxogenConfig {

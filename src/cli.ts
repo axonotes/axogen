@@ -1,3 +1,9 @@
+/**
+ * Command-line interface setup and configuration for Axogen.
+ * This module creates and configures the main CLI application with all available commands,
+ * options, and hooks for logging, theming, and configuration loading.
+ */
+
 import {Command} from "commander";
 import {getVersion} from "./version";
 import {loadConfig} from "./config/loader.ts";
@@ -8,6 +14,11 @@ import {pretty, configurePretty, LogLevel, setTheme} from "./utils/pretty";
 import {themes, type ThemeName} from "./utils/themes";
 import type {ZodAxogenConfig} from "./config/types";
 
+/**
+ * Creates and configures the main CLI application with all commands and options.
+ * Sets up global options, pre-action hooks for configuration, and dynamic commands.
+ * @returns Promise that resolves to the configured Command instance
+ */
 async function createCLI(): Promise<Command> {
     const cli = new Command();
 

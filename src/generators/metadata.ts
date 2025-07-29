@@ -1,12 +1,40 @@
+/**
+ * Metadata utilities for generated files.
+ * Provides functionality to create metadata objects and header comments
+ * that get embedded in generated configuration files to track generation
+ * details and warn against manual editing.
+ */
+
+/**
+ * Metadata structure that gets embedded in generated files.
+ * Contains information about the generation process including timestamp,
+ * generator identification, and target file details.
+ */
 export interface GeneratorMetadata {
+    /** Name of the generator tool that created the file */
     generator: string;
+    /** ISO timestamp of when the file was generated */
     generated_at: string;
+    /** Warning message to prevent manual editing */
     warning: string;
+    /** Path where the target file is written */
     target_path: string;
+    /** Format type of the generated file */
     format: string;
+    /** Additional metadata fields that can be added */
     [key: string]: any;
 }
 
+/**
+ * Creates metadata object for embedding in generated files.
+ * Includes standard fields like generator name, timestamp, and warnings,
+ * along with target-specific information.
+ *
+ * @param targetPath - File path where the target will be written
+ * @param format - Format type of the target file (json, yaml, etc.)
+ * @param extra - Additional metadata fields to include
+ * @returns Complete metadata object ready for embedding
+ */
 export function createMetadata(
     targetPath: string,
     format: string,
@@ -22,6 +50,17 @@ export function createMetadata(
     };
 }
 
+/**
+ * Creates header comment lines for generated files in various formats.
+ * Adapts comment syntax based on the target file format and includes
+ * generation metadata and warnings against manual editing.
+ *
+ * @param targetPath - File path where the target will be written
+ * @param format - Optional format type to include in comments
+ * @param prefix - Comment prefix character(s) for the target format
+ * @param suffix - Comment suffix character(s) for the target format (e.g., XML closing)
+ * @returns Array of formatted comment lines ready for insertion
+ */
 export function createHeaderComments(
     targetPath: string,
     format?: string,

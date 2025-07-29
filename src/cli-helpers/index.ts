@@ -4,7 +4,11 @@ import {spawn} from "node:child_process";
 import {pretty} from "../utils/pretty";
 
 /**
- * Execute a shell command and capture output
+ * Execute a shell command and capture output.
+ * Runs the command in a child process and returns stdout, stderr, and exit code.
+ * @param command - Shell command to execute
+ * @param options - Execution options including working directory and environment variables
+ * @returns Promise resolving to command output and exit code
  */
 export function executeCommand(
     command: string,
@@ -83,7 +87,12 @@ function isInteractiveCommand(command: string): boolean {
 }
 
 /**
- * Execute a shell command with live input/output streaming
+ * Execute a shell command with live input/output streaming.
+ * Supports interactive commands and provides real-time output with proper signal handling.
+ * Automatically detects interactive commands and enables stdin forwarding when appropriate.
+ * @param command - Shell command to execute
+ * @param options - Execution options including working directory, environment, and interactivity settings
+ * @returns Promise resolving to exit code and termination status
  */
 export function liveExec(
     command: string,

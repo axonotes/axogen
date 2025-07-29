@@ -1,11 +1,38 @@
+/**
+ * Variable preprocessing utilities for target generation.
+ * Provides format-specific processors that handle complex JavaScript values
+ * like BigInt, Symbol, Date, RegExp, Map, Set, and circular references,
+ * converting them to serializable representations for various output formats.
+ */
+
+/**
+ * Base variable processor that handles complex JavaScript values and converts them
+ * to serializable formats. Provides circular reference detection and format-agnostic
+ * processing of primitives, objects, arrays, and special types.
+ */
 export class VariableProcessor {
+    /** WeakSet for tracking visited objects to detect circular references */
     protected seen = new WeakSet();
 
+    /**
+     * Main entry point for processing variables.
+     * Resets the circular reference tracker and processes the input value.
+     *
+     * @param variables - Variables object to process and make serializable
+     * @returns Processed variables with complex types converted to serializable forms
+     */
     process(variables: Record<string, any>): any {
         this.seen = new WeakSet(); // Reset for each processing
         return this.processValue(variables);
     }
 
+    /**
+     * Recursively processes a value of any type, handling primitives, objects, and special cases.
+     * Converts non-serializable types to appropriate representations based on their type.
+     *
+     * @param value - Value of any type to process
+     * @returns Processed value suitable for serialization
+     */
     protected processValue(value: any): any {
         // Handle null and undefined
         if (value === null || value === undefined) {

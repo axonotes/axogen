@@ -1,3 +1,9 @@
+/**
+ * Configuration loading utilities for Axogen.
+ * This module provides functionality to load, validate, and process configuration files
+ * from TypeScript or JavaScript sources using Jiti for TypeScript compilation.
+ */
+
 import {resolve, join} from "node:path";
 import {access, constants} from "node:fs/promises";
 import {z} from "zod";
@@ -11,8 +17,18 @@ import {
     type ZodAxogenConfig,
 } from "./types";
 
+/**
+ * Configuration loader class that handles loading and validation of Axogen configuration files.
+ * Supports both TypeScript and JavaScript configuration files with automatic compilation.
+ */
 export class ConfigLoader {
-    /** Load configuration from a file */
+    /**
+     * Load configuration from a file with validation and type checking.
+     * Automatically detects file type and uses appropriate loader (Jiti for TypeScript).
+     * @param configPath - Optional path to configuration file. If not provided, searches for default config files
+     * @returns Promise that resolves to validated Axogen configuration
+     * @throws Error if configuration file cannot be found, loaded, or fails validation
+     */
     async load(configPath?: string): Promise<ZodAxogenConfig> {
         const resolvedPath = await this.resolveConfigPath(configPath);
 
@@ -89,7 +105,12 @@ export class ConfigLoader {
         }
     }
 
-    /** Create jiti loader for TypeScript files */
+    /**
+     * Create Jiti loader for TypeScript files with appropriate configuration.
+     * Configures Jiti with optimal settings for TypeScript compilation and caching.
+     * @returns Promise that resolves to configured Jiti instance
+     * @throws Error if Jiti is not available
+     */
     private async createJitiLoader() {
         try {
             return createJiti(import.meta.url, {
@@ -108,7 +129,13 @@ export class ConfigLoader {
         }
     }
 
-    /** Find the config file path */
+    /**
+     * Find and resolve the configuration file path.
+     * If no path is provided, searches for default configuration files in the current working directory.
+     * @param configPath - Optional explicit path to configuration file
+     * @returns Promise that resolves to the absolute path of the configuration file
+     * @throws Error if no configuration file can be found
+     */
     private async resolveConfigPath(configPath?: string): Promise<string> {
         if (configPath) {
             return resolve(configPath);
@@ -143,10 +170,15 @@ export class ConfigLoader {
     }
 }
 
-// Singleton instance
+/** Singleton instance of ConfigLoader for convenient access */
 export const configLoader = new ConfigLoader();
 
-/** Load configuration - convenience function */
+/**
+ * Load configuration - convenience function that uses the singleton ConfigLoader instance.
+ * This is the primary function users should call to load their Axogen configuration.
+ * @param configPath - Optional path to configuration file
+ * @returns Promise that resolves to validated Axogen configuration
+ */
 export async function loadConfig(
     configPath?: string
 ): Promise<ZodAxogenConfig> {

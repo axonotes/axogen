@@ -810,6 +810,14 @@ const unsafeSchema = z
     })
     .strict();
 
+/**
+ * Mark a string value as safe to bypass Axogen's secret detection system.
+ * This allows you to explicitly indicate that a value that looks like a secret
+ * is actually safe to write to files that are not git-ignored.
+ * @param value - The string value that looks like a secret but is actually safe
+ * @param reason - Description of why this value is safe despite appearing to be a secret
+ * @returns Wrapped value that bypasses Axogen's secret detection checks
+ */
 export function unsafe(
     value: string,
     reason: string
