@@ -5,7 +5,7 @@
  * Handles security checks for secrets detection and Git ignore validation.
  */
 
-import {writeFile, mkdir} from "node:fs/promises";
+import {writeFile, mkdir, copyFile} from "node:fs/promises";
 import {dirname, resolve} from "node:path";
 import {
     EnvGenerator,
@@ -336,6 +336,36 @@ export class TargetGenerator {
         );
 
         if (!dryRun) {
+            if (target.backup) {
+                if (!target.backupPath) {
+                    if (!isGitIgnored(".axogen/backup")) {
+                        pretty.warn(
+                            "The .axogen/backup directory is not ignored by git. Backups may be committed."
+                        );
+                    }
+                }
+
+                const backupPath =
+                    target.backupPath || `.axogen/backup/${target.path}`;
+                const fullSourcePath = resolve(
+                    options.baseDir || process.cwd(),
+                    target.path
+                );
+                const fullBackupPath = resolve(
+                    options.baseDir || process.cwd(),
+                    backupPath
+                );
+                try {
+                    await mkdir(dirname(fullBackupPath), {recursive: true});
+                    await copyFile(fullSourcePath, fullBackupPath);
+                    pretty.info(`Backup created at: ${fullBackupPath}`);
+                } catch (error) {
+                    pretty.error(
+                        `Failed to create backup for target "${targetName}": ${error instanceof Error ? error.message : String(error)}`
+                    );
+                }
+            }
+
             await mkdir(dirname(path), {recursive: true});
             await writeFile(path, content, "utf-8");
         }
@@ -378,6 +408,11 @@ export class TargetGenerator {
                 const path = await this.generateAndWrite(name, target, options);
                 results.push({name, path, success: true});
             } catch (error) {
+                if (target.backup) {
+                    pretty.info(
+                        `No backup created for target "${name}" as it was not written due to an error.`
+                    );
+                }
                 const errorMessage =
                     error instanceof Error ? error.message : String(error);
                 results.push({

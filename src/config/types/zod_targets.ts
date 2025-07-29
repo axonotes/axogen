@@ -40,6 +40,20 @@ const baseTargetSchema = z.object({
         .describe("Condition to determine if the target should be generated")
         .default(true)
         .optional(),
+    backup: z
+        .boolean()
+        .describe(
+            "Whether to create a backup of the target file before writing"
+        )
+        .default(false)
+        .optional(),
+    backupPath: z
+        .string()
+        .describe(
+            "The path to store the backup file. Defaults to '.axogen/backup/{{path}}'"
+        )
+        .default("")
+        .optional(),
 });
 
 export const jsonTargetSchema = baseTargetSchema.extend({

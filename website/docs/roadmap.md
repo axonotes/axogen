@@ -134,7 +134,7 @@
 ### Advanced Target Options
 
 - [x] `schema` validation option
-- [ ] `condition` conditional generation
+- [x] `condition` conditional generation
 - [x] `generate_meta` metadata comments
 - [ ] `backup` file backup option
 - [x] Template-specific options

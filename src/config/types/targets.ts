@@ -135,6 +135,10 @@ interface BaseTargetDefinition<TType extends string, TSchema, TVariables> {
     generate_meta?: boolean;
     /** Condition to determine if target should be generated */
     condition?: boolean;
+    /** Whether to create a backup of the file before writing */
+    backup?: boolean;
+    /** Optional path for backup files, defaults to ".axogen/backup/{{path}}" */
+    backupPath?: string;
 }
 
 /**
@@ -365,6 +369,8 @@ export type AnyTarget = TargetTypeMap[keyof TargetTypeMap];
  * @param config.options - JSON formatting options (replacer, space)
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns JSON target definition with schema validation
  */
 export function json<TSchema extends z.ZodType>(config: {
@@ -374,6 +380,8 @@ export function json<TSchema extends z.ZodType>(config: {
     options?: JsonTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): JsonTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -385,6 +393,8 @@ export function json<TSchema extends z.ZodType>(config: {
  * @param config.options - JSON formatting options (replacer, space)
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns JSON target definition without schema validation
  */
 export function json<TVariables extends Record<string, any>>(config: {
@@ -393,6 +403,8 @@ export function json<TVariables extends Record<string, any>>(config: {
     options?: JsonTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): JsonTargetDefinition<TVariables, TVariables>;
 
 export function json(config: any): any {
@@ -409,6 +421,8 @@ export function json(config: any): any {
  * @param config.options - JSON5 formatting options
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns JSON5 target definition with schema validation
  */
 export function json5<TSchema extends z.ZodType>(config: {
@@ -418,6 +432,8 @@ export function json5<TSchema extends z.ZodType>(config: {
     options?: Json5TargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): Json5TargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -429,6 +445,8 @@ export function json5<TSchema extends z.ZodType>(config: {
  * @param config.options - JSON5 formatting options
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns JSON5 target definition without schema validation
  */
 export function json5<TVariables extends Record<string, any>>(config: {
@@ -437,6 +455,8 @@ export function json5<TVariables extends Record<string, any>>(config: {
     options?: Json5TargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): Json5TargetDefinition<TVariables, TVariables>;
 
 export function json5(config: any): any {
@@ -453,6 +473,8 @@ export function json5(config: any): any {
  * @param config.options - JSONC formatting options (replacer, space)
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns JSONC target definition with schema validation
  */
 export function jsonc<TSchema extends z.ZodType>(config: {
@@ -462,6 +484,8 @@ export function jsonc<TSchema extends z.ZodType>(config: {
     options?: JsoncTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): JsoncTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -473,6 +497,8 @@ export function jsonc<TSchema extends z.ZodType>(config: {
  * @param config.options - JSONC formatting options (replacer, space)
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns JSONC target definition without schema validation
  */
 export function jsonc<TVariables extends Record<string, any>>(config: {
@@ -481,6 +507,8 @@ export function jsonc<TVariables extends Record<string, any>>(config: {
     options?: JsoncTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): JsoncTargetDefinition<TVariables, TVariables>;
 
 export function jsonc(config: any): any {
@@ -497,6 +525,8 @@ export function jsonc(config: any): any {
  * @param config.options - HJSON serialization options
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns HJSON target definition with schema validation
  */
 export function hjson<TSchema extends z.ZodType>(config: {
@@ -506,6 +536,8 @@ export function hjson<TSchema extends z.ZodType>(config: {
     options?: HjsonTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): HjsonTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -517,6 +549,8 @@ export function hjson<TSchema extends z.ZodType>(config: {
  * @param config.options - HJSON serialization options
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns HJSON target definition without schema validation
  */
 export function hjson<TVariables extends Record<string, any>>(config: {
@@ -525,6 +559,8 @@ export function hjson<TVariables extends Record<string, any>>(config: {
     options?: HjsonTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): HjsonTargetDefinition<TVariables, TVariables>;
 
 export function hjson(config: any): any {
@@ -541,6 +577,8 @@ export function hjson(config: any): any {
  * @param config.options - YAML dump options for formatting control
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns YAML target definition with schema validation
  */
 export function yaml<TSchema extends z.ZodType>(config: {
@@ -550,6 +588,8 @@ export function yaml<TSchema extends z.ZodType>(config: {
     options?: YamlTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): YamlTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -561,6 +601,8 @@ export function yaml<TSchema extends z.ZodType>(config: {
  * @param config.options - YAML dump options for formatting control
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns YAML target definition without schema validation
  */
 export function yaml<TVariables extends Record<string, any>>(config: {
@@ -569,6 +611,8 @@ export function yaml<TVariables extends Record<string, any>>(config: {
     options?: YamlTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): YamlTargetDefinition<TVariables, TVariables>;
 
 export function yaml(config: any): any {
@@ -584,6 +628,8 @@ export function yaml(config: any): any {
  * @param config.variables - Variables to serialize as TOML, validated against schema
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns TOML target definition with schema validation
  */
 export function toml<TSchema extends z.ZodType>(config: {
@@ -592,6 +638,8 @@ export function toml<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): TomlTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -602,6 +650,8 @@ export function toml<TSchema extends z.ZodType>(config: {
  * @param config.variables - Variables to serialize as TOML
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns TOML target definition without schema validation
  */
 export function toml<TVariables extends Record<string, any>>(config: {
@@ -609,6 +659,8 @@ export function toml<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): TomlTargetDefinition<TVariables, TVariables>;
 
 export function toml(config: any): any {
@@ -625,6 +677,8 @@ export function toml(config: any): any {
  * @param config.options - INI encoding options for formatting control
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns INI target definition with schema validation
  */
 export function ini<TSchema extends z.ZodType>(config: {
@@ -634,6 +688,8 @@ export function ini<TSchema extends z.ZodType>(config: {
     options?: IniTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): IniTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -645,6 +701,8 @@ export function ini<TSchema extends z.ZodType>(config: {
  * @param config.options - INI encoding options for formatting control
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns INI target definition without schema validation
  */
 export function ini<TVariables extends Record<string, any>>(config: {
@@ -653,6 +711,8 @@ export function ini<TVariables extends Record<string, any>>(config: {
     options?: IniTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): IniTargetDefinition<TVariables, TVariables>;
 
 export function ini(config: any): any {
@@ -669,6 +729,8 @@ export function ini(config: any): any {
  * @param config.options - Properties formatting options (align, sort, whitespace, platform)
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns Properties target definition with schema validation
  */
 export function properties<TSchema extends z.ZodType>(config: {
@@ -678,6 +740,8 @@ export function properties<TSchema extends z.ZodType>(config: {
     options?: PropertiesTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): PropertiesTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -689,6 +753,8 @@ export function properties<TSchema extends z.ZodType>(config: {
  * @param config.options - Properties formatting options (align, sort, whitespace, platform)
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns Properties target definition without schema validation
  */
 export function properties<TVariables extends Record<string, any>>(config: {
@@ -697,6 +763,8 @@ export function properties<TVariables extends Record<string, any>>(config: {
     options?: PropertiesTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): PropertiesTargetDefinition<TVariables, TVariables>;
 
 export function properties(config: any): any {
@@ -712,6 +780,8 @@ export function properties(config: any): any {
  * @param config.variables - Variables to serialize as environment variables, validated against schema
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns Environment variable target definition with schema validation
  */
 export function env<TSchema extends z.ZodType>(config: {
@@ -720,6 +790,8 @@ export function env<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): EnvTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -730,6 +802,8 @@ export function env<TSchema extends z.ZodType>(config: {
  * @param config.variables - Variables to serialize as environment variables
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns Environment variable target definition without schema validation
  */
 export function env<TVariables extends Record<string, any>>(config: {
@@ -737,6 +811,8 @@ export function env<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): EnvTargetDefinition<TVariables, TVariables>;
 
 export function env(config: any): any {
@@ -753,6 +829,8 @@ export function env(config: any): any {
  * @param config.options - XML builder options for formatting control
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns XML target definition with schema validation
  */
 export function xml<TSchema extends z.ZodType>(config: {
@@ -762,6 +840,8 @@ export function xml<TSchema extends z.ZodType>(config: {
     options?: XmlTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): XmlTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -773,6 +853,8 @@ export function xml<TSchema extends z.ZodType>(config: {
  * @param config.options - XML builder options for formatting control
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns XML target definition without schema validation
  */
 export function xml<TVariables extends Record<string, any>>(config: {
@@ -781,6 +863,8 @@ export function xml<TVariables extends Record<string, any>>(config: {
     options?: XmlTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): XmlTargetDefinition<TVariables, TVariables>;
 
 export function xml(config: any): any {
@@ -797,6 +881,8 @@ export function xml(config: any): any {
  * @param config.options - CSV unparse options for formatting control
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns CSV target definition with schema validation
  */
 export function csv<TSchema extends z.ZodType>(config: {
@@ -806,6 +892,8 @@ export function csv<TSchema extends z.ZodType>(config: {
     options?: CsvTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): CsvTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -817,6 +905,8 @@ export function csv<TSchema extends z.ZodType>(config: {
  * @param config.options - CSV unparse options for formatting control
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns CSV target definition without schema validation
  */
 export function csv<TVariables extends Record<string, any>[]>(config: {
@@ -825,6 +915,8 @@ export function csv<TVariables extends Record<string, any>[]>(config: {
     options?: CsvTargetOptions;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): CsvTargetDefinition<TVariables, TVariables>;
 
 export function csv(config: any): any {
@@ -840,6 +932,8 @@ export function csv(config: any): any {
  * @param config.variables - Variables to serialize as CSON, validated against schema
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns CSON target definition with schema validation
  */
 export function cson<TSchema extends z.ZodType>(config: {
@@ -848,6 +942,8 @@ export function cson<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): CsonTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -858,6 +954,8 @@ export function cson<TSchema extends z.ZodType>(config: {
  * @param config.variables - Variables to serialize as CSON
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns CSON target definition without schema validation
  */
 export function cson<TVariables extends Record<string, any>>(config: {
@@ -865,6 +963,8 @@ export function cson<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): CsonTargetDefinition<TVariables, TVariables>;
 
 export function cson(config: any): any {
@@ -882,6 +982,8 @@ export function cson(config: any): any {
  * @param config.template - Template path to render with variables
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns Template target definition with schema validation
  */
 export function template<TSchema extends z.ZodType>(config: {
@@ -892,6 +994,8 @@ export function template<TSchema extends z.ZodType>(config: {
     template: string;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): TemplateTargetDefinition<TSchema, z.infer<TSchema>>;
 
 /**
@@ -904,6 +1008,8 @@ export function template<TSchema extends z.ZodType>(config: {
  * @param config.template - Template path to render with variables
  * @param config.generate_meta - Whether to generate metadata alongside the target
  * @param config.condition - Condition to determine if target should be generated
+ * @param config.backup - Whether to create a backup of the file before writing
+ * @param config.backupPath - Optional path for backup files, defaults to ".axogen/backup/{{path}}"
  * @returns Template target definition without schema validation
  */
 export function template<TVariables extends Record<string, any>>(config: {
@@ -913,6 +1019,8 @@ export function template<TVariables extends Record<string, any>>(config: {
     template: string;
     generate_meta?: boolean;
     condition?: boolean;
+    backup?: boolean;
+    backupPath?: string;
 }): TemplateTargetDefinition<TVariables, TVariables>;
 
 export function template(config: any): any {
