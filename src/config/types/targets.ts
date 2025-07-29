@@ -48,7 +48,6 @@ export type SupportedTargetTypesType = (typeof SupportedTargetTypes)[number];
 interface BaseTargetSchema<TSchema extends z.ZodType> {
     path: string;
     schema: TSchema;
-    variables: z.infer<TSchema>;
     generate_meta?: boolean;
 }
 
@@ -59,6 +58,7 @@ export type JsonTargetOptions = {
 export interface JsonTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "json";
+    variables: z.infer<TSchema>;
     options?: JsonTargetOptions;
 }
 
@@ -68,6 +68,7 @@ export type Json5TargetOptions = {
 export interface Json5Target<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "json5";
+    variables: z.infer<TSchema>;
     options?: Json5TargetOptions;
 }
 
@@ -78,6 +79,7 @@ export interface JsoncTargetOptions {
 export interface JsoncTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "jsonc";
+    variables: z.infer<TSchema>;
     options?: JsoncTargetOptions;
 }
 
@@ -85,6 +87,7 @@ export type HjsonTargetOptions = Hjson.SerializeOptions;
 export interface HjsonTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "hjson";
+    variables: z.infer<TSchema>;
     options?: Hjson.SerializeOptions;
 }
 
@@ -92,18 +95,21 @@ export type YamlTargetOptions = yaml.DumpOptions;
 export interface YamlTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "yaml";
+    variables: z.infer<TSchema>;
     options?: YamlTargetOptions;
 }
 
 export interface TomlTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "toml";
+    variables: z.infer<TSchema>;
 }
 
 export type IniTargetOptions = ini.EncodeOptions;
 export interface IniTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "ini";
+    variables: z.infer<TSchema>;
     options?: IniTargetOptions;
 }
 
@@ -116,18 +122,21 @@ export type PropertiesTargetOptions = {
 export interface PropertiesTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "properties";
+    variables: z.infer<TSchema>;
     options?: PropertiesTargetOptions;
 }
 
 export interface EnvTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "env";
+    variables: z.infer<TSchema>;
 }
 
 export type XmlTargetOptions = XmlBuilderOptions;
 export interface XmlTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "xml";
+    variables: z.infer<TSchema>;
     config?: XmlBuilderOptions;
 }
 
@@ -135,18 +144,21 @@ export type CsvTargetOptions = UnparseConfig;
 export interface CsvTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "csv";
+    variables: z.infer<TSchema>;
     options?: CsvTargetOptions;
 }
 
 export interface CsonTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "cson";
+    variables: z.infer<TSchema>;
 }
 
 export type TemplateTargetEngine = "nunjucks" | "handlebars" | "mustache";
 export interface TemplateTarget<TSchema extends z.ZodType>
     extends BaseTargetSchema<TSchema> {
     type: "template";
+    variables: z.infer<TSchema>;
     template: string;
     engine?: TemplateTargetEngine;
 }
@@ -159,71 +171,83 @@ export interface TemplateTarget<TSchema extends z.ZodType>
  */
 interface BaseTargetNoSchema {
     path: string;
-    variables: Record<string, any>;
     generate_meta?: boolean;
 }
 
 export interface JsonTargetNoSchema extends BaseTargetNoSchema {
     type: "json";
+    variables: Record<string, any>;
     options?: JsonTargetOptions;
 }
 
 export interface Json5TargetNoSchema extends BaseTargetNoSchema {
     type: "json5";
+    variables: Record<string, any>;
     options?: Json5TargetOptions;
 }
 
 export interface JsoncTargetNoSchema extends BaseTargetNoSchema {
     type: "jsonc";
+    variables: Record<string, any>;
     options?: JsoncTargetOptions;
 }
 
 export interface HjsonTargetNoSchema extends BaseTargetNoSchema {
     type: "hjson";
+    variables: Record<string, any>;
     options?: HjsonTargetOptions;
 }
 
 export interface YamlTargetNoSchema extends BaseTargetNoSchema {
     type: "yaml";
+    variables: Record<string, any>;
     options?: YamlTargetOptions;
 }
 
 export interface TomlTargetNoSchema extends BaseTargetNoSchema {
     type: "toml";
+    variables: Record<string, any>;
 }
 
 export interface IniTargetNoSchema extends BaseTargetNoSchema {
     type: "ini";
+    variables: Record<string, any>;
     options?: IniTargetOptions;
 }
 
 export interface PropertiesTargetNoSchema extends BaseTargetNoSchema {
     type: "properties";
+    variables: Record<string, any>;
     options?: PropertiesTargetOptions;
 }
 
 export interface EnvTargetNoSchema extends BaseTargetNoSchema {
     type: "env";
+    variables: Record<string, any>;
 }
 
 export interface XmlTargetNoSchema extends BaseTargetNoSchema {
     type: "xml";
+    variables: Record<string, any>;
     config?: XmlTargetOptions;
 }
 
 export interface CsvTargetNoSchema extends BaseTargetNoSchema {
     type: "csv";
+    variables: Record<string, any>[];
     options?: CsvTargetOptions;
 }
 
 export interface CsonTargetNoSchema extends BaseTargetNoSchema {
     type: "cson";
+    variables: Record<string, any>;
 }
 
 export interface TemplateTargetNoSchema extends BaseTargetNoSchema {
     type: "template";
     template: string;
     engine?: TemplateTargetEngine;
+    variables: Record<string, any>;
 }
 
 export type Target<TSchema extends SchemaType = Record<string, any>> =

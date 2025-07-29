@@ -125,6 +125,7 @@ export const xmlTargetSchema = baseTargetSchema
 export const csvTargetSchema = baseTargetSchema
     .extend({
         type: z.literal("csv"),
+        variables: z.array(z.record(z.string(), z.any())),
         options: z.custom<CsvTargetOptions>().optional(),
     })
     .strict();

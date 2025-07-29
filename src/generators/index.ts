@@ -177,24 +177,7 @@ export class TargetGenerator {
             case "xml":
                 return this.xmlGenerator.generate(variables, target.options);
             case "csv":
-                if (!("csv" in variables)) {
-                    throw new Error(
-                        `CSV target "${target.path}" requires a "csv" variable: \n${JSON.stringify(
-                            {
-                                csv: [
-                                    "header1,header2,header3",
-                                    "value1,value2,value3",
-                                ],
-                            },
-                            null,
-                            2
-                        )}`
-                    );
-                }
-                return this.csvGenerator.generate(
-                    variables.csv,
-                    target.options
-                );
+                return this.csvGenerator.generate(variables, target.options);
             case "cson":
                 return this.csonGenerator.generate(variables);
             case "template":
