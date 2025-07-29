@@ -38,7 +38,8 @@ const baseTargetSchema = z.object({
     condition: z
         .boolean()
         .describe("Condition to determine if the target should be generated")
-        .default(true),
+        .default(true)
+        .optional(),
 });
 
 export const jsonTargetSchema = baseTargetSchema.extend({
@@ -48,7 +49,7 @@ export const jsonTargetSchema = baseTargetSchema.extend({
     variables: z
         .record(z.string(), z.any())
         .describe("Variables to be used in the target"),
-    options: z.custom<JsonTargetOptions>(),
+    options: z.custom<JsonTargetOptions>().optional(),
 });
 
 export const json5TargetSchema = baseTargetSchema.extend({
@@ -58,7 +59,7 @@ export const json5TargetSchema = baseTargetSchema.extend({
     variables: z
         .record(z.string(), z.any())
         .describe("Variables to be used in the target"),
-    options: z.custom<Json5TargetOptions>(),
+    options: z.custom<Json5TargetOptions>().optional(),
 });
 
 export const jsoncTargetSchema = baseTargetSchema.extend({
@@ -68,7 +69,7 @@ export const jsoncTargetSchema = baseTargetSchema.extend({
     variables: z
         .record(z.string(), z.any())
         .describe("Variables to be used in the target"),
-    options: z.custom<JsoncTargetOptions>(),
+    options: z.custom<JsoncTargetOptions>().optional(),
 });
 
 export const hjsonTargetSchema = baseTargetSchema.extend({
@@ -78,7 +79,7 @@ export const hjsonTargetSchema = baseTargetSchema.extend({
     variables: z
         .record(z.string(), z.any())
         .describe("Variables to be used in the target"),
-    options: z.custom<HjsonTargetOptions>(),
+    options: z.custom<HjsonTargetOptions>().optional(),
 });
 
 export const yamlTargetSchema = baseTargetSchema.extend({
@@ -88,7 +89,7 @@ export const yamlTargetSchema = baseTargetSchema.extend({
     variables: z
         .record(z.string(), z.any())
         .describe("Variables to be used in the target"),
-    options: z.custom<YamlTargetOptions>(),
+    options: z.custom<YamlTargetOptions>().optional(),
 });
 
 export const tomlTargetSchema = baseTargetSchema.extend({
@@ -105,7 +106,7 @@ export const iniTargetSchema = baseTargetSchema.extend({
     variables: z
         .record(z.string(), z.any())
         .describe("Variables to be used in the target"),
-    options: z.custom<IniTargetOptions>(),
+    options: z.custom<IniTargetOptions>().optional(),
 });
 
 export const propertiesTargetSchema = baseTargetSchema.extend({
@@ -115,7 +116,7 @@ export const propertiesTargetSchema = baseTargetSchema.extend({
     variables: z
         .record(z.string(), z.any())
         .describe("Variables to be used in the target"),
-    options: z.custom<PropertiesTargetOptions>(),
+    options: z.custom<PropertiesTargetOptions>().optional(),
 });
 
 export const envTargetSchema = baseTargetSchema.extend({
@@ -132,7 +133,7 @@ export const xmlTargetSchema = baseTargetSchema.extend({
     variables: z
         .record(z.string(), z.any())
         .describe("Variables to be used in the target"),
-    options: z.custom<XmlTargetOptions>(),
+    options: z.custom<XmlTargetOptions>().optional(),
 });
 
 export const csvTargetSchema = baseTargetSchema.extend({
@@ -140,7 +141,7 @@ export const csvTargetSchema = baseTargetSchema.extend({
     variables: z
         .array(z.record(z.string(), z.any()))
         .describe("Variables to be used in the target"),
-    options: z.custom<CsvTargetOptions>(),
+    options: z.custom<CsvTargetOptions>().optional(),
 });
 
 export const csonTargetSchema = baseTargetSchema.extend({

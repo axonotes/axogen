@@ -8,8 +8,8 @@ import {
     mock,
     spyOn,
 } from "bun:test";
-import {TargetGenerator, targetGenerator} from "./index.ts";
-import type {ZodTarget} from "../config/types";
+import {TargetGenerator} from "./index.ts";
+import type {ZodAnyTarget} from "../config/types";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {unsafe} from "../utils/secrets.ts";
@@ -116,7 +116,7 @@ describe("TargetGenerator", () => {
 
         formats.forEach((type) => {
             test(`should route ${type} files to appropriate generator`, async () => {
-                const target: ZodTarget = {
+                const target: ZodAnyTarget = {
                     type,
                     path: `test.${type}`,
                     variables: testData,
@@ -133,12 +133,10 @@ describe("TargetGenerator", () => {
         });
 
         test("should route csv files to appropriate generator", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "csv",
                 path: "test.csv",
-                variables: {
-                    csv: csvTestData,
-                }, // Use CSV-compatible data
+                variables: csvTestData, // Use CSV-compatible data
                 generate_meta: false,
             };
 
@@ -151,7 +149,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should route template files correctly", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "template",
                 path: "test.conf",
                 template: path.join(TEMPLATES_DIR, "config.njk"),
@@ -179,7 +177,7 @@ describe("TargetGenerator", () => {
 
     describe("File Operations", () => {
         test("should generate and write file to disk", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: path.join(TEMP_DIR, "generated.json"),
                 variables: testData,
@@ -194,7 +192,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should create directories recursively", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: path.join(TEMP_DIR, "deep", "nested", "config.json"),
                 variables: testData,
@@ -207,7 +205,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should handle dry run mode", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: path.join(TEMP_DIR, "dryrun.json"),
                 variables: testData,
@@ -227,7 +225,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should resolve relative paths with baseDir", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: "relative-config.json",
                 variables: testData,
@@ -246,7 +244,7 @@ describe("TargetGenerator", () => {
 
     describe("Multiple Target Generation", () => {
         test("should generate multiple targets successfully", async () => {
-            const targets: Record<string, ZodTarget> = {
+            const targets: Record<string, ZodAnyTarget> = {
                 json_config: {
                     type: "json",
                     path: path.join(TEMP_DIR, "multi.json"),
@@ -272,7 +270,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should handle mixed success/failure in multiple targets", async () => {
-            const targets: Record<string, ZodTarget> = {
+            const targets: Record<string, ZodAnyTarget> = {
                 good_target: {
                     type: "json",
                     path: path.join(TEMP_DIR, "good.json"),
@@ -300,7 +298,7 @@ describe("TargetGenerator", () => {
         test("should detect secrets and throw error when not git ignored", async () => {
             gitIgnoreSpy.mockReturnValue(false);
 
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: "secrets.json",
                 variables: rawSecretData,
@@ -315,7 +313,7 @@ describe("TargetGenerator", () => {
         test("should allow secrets when file is git ignored", async () => {
             gitIgnoreSpy.mockReturnValue(true);
 
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: "secrets.json",
                 variables: rawSecretData,
@@ -328,7 +326,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should allow secrets wrapped in unsafe function", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: "safe-secrets.json",
                 variables: safeSecretData,
@@ -345,7 +343,7 @@ describe("TargetGenerator", () => {
                 throw new Error("Git check failed");
             });
 
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: "secrets.json",
                 variables: rawSecretData,
@@ -360,7 +358,7 @@ describe("TargetGenerator", () => {
 
     describe("Metadata Generation", () => {
         test("should add metadata when enabled", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: "with-metadata.json",
                 variables: testData,
@@ -374,12 +372,10 @@ describe("TargetGenerator", () => {
         });
 
         test("should skip metadata for CSV format", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "csv",
                 path: "no-metadata.csv",
-                variables: {
-                    csv: csvTestData,
-                }, // Use CSV-compatible data
+                variables: csvTestData, // Use CSV-compatible data
                 generate_meta: true,
             };
 
@@ -396,7 +392,7 @@ describe("TargetGenerator", () => {
             ];
 
             for (const {type, comment} of formats) {
-                const target: ZodTarget = {
+                const target: ZodAnyTarget = {
                     type,
                     path: `header.${type}`,
                     variables: testData,
@@ -411,7 +407,7 @@ describe("TargetGenerator", () => {
 
     describe("Template Generation", () => {
         test("should generate from Nunjucks template", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "template",
                 path: "generated.conf",
                 template: path.join(TEMPLATES_DIR, "config.njk"),
@@ -426,7 +422,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should generate from Handlebars template", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "template",
                 path: "handlebars.conf",
                 template: path.join(TEMPLATES_DIR, "config.hbs"),
@@ -441,7 +437,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should add metadata to template context when enabled", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "template",
                 path: "metadata.conf",
                 template: path.join(TEMPLATES_DIR, "metadata.njk"),
@@ -456,7 +452,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should throw error for missing template file", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "template",
                 path: "missing.conf",
                 template: path.join(TEMPLATES_DIR, "nonexistent.njk"),
@@ -469,7 +465,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should throw error for unsupported template engine", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "template",
                 path: "unsupported.conf",
                 template: path.join(TEMPLATES_DIR, "config.njk"),
@@ -501,7 +497,7 @@ describe("TargetGenerator", () => {
             const circularData: any = {name: "test"};
             circularData.self = circularData;
 
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: "circular.json",
                 variables: circularData,
@@ -514,7 +510,7 @@ describe("TargetGenerator", () => {
         });
 
         test("should provide meaningful error messages", async () => {
-            const target: ZodTarget = {
+            const target: ZodAnyTarget = {
                 type: "json",
                 path: "/root/invalid/path/file.json",
                 variables: testData,
