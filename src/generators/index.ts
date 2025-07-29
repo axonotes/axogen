@@ -274,6 +274,14 @@ export class TargetGenerator {
         }> = [];
 
         for (const [name, target] of Object.entries(targets)) {
+            // Check if the target should be generated
+            if (!target.condition && target.condition !== undefined) {
+                pretty.info(
+                    `Skipping target "${name}" as it does not meet the condition.`
+                );
+                continue;
+            }
+
             try {
                 const path = await this.generateAndWrite(name, target, options);
                 results.push({name, path, success: true});

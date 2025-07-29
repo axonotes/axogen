@@ -35,6 +35,10 @@ const baseTargetSchema = z.object({
         .boolean()
         .describe("Whether to generate metadata for the target")
         .default(false),
+    condition: z
+        .boolean()
+        .describe("Condition to determine if the target should be generated")
+        .default(true),
 });
 
 export const jsonTargetSchema = baseTargetSchema.extend({

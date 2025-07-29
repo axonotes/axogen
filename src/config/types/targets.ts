@@ -108,6 +108,7 @@ interface BaseTargetDefinition<TType extends string, TSchema, TVariables> {
     schema?: TSchema;
     variables: TVariables;
     generate_meta?: boolean;
+    condition?: boolean;
 }
 
 export interface JsonTargetDefinition<
@@ -273,6 +274,7 @@ export function json<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: JsonTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): JsonTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function json<TVariables extends Record<string, any>>(config: {
@@ -280,6 +282,7 @@ export function json<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     options?: JsonTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): JsonTargetDefinition<TVariables, TVariables>;
 
 export function json(config: any): any {
@@ -292,6 +295,7 @@ export function json5<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: Json5TargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): Json5TargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function json5<TVariables extends Record<string, any>>(config: {
@@ -299,6 +303,7 @@ export function json5<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     options?: Json5TargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): Json5TargetDefinition<TVariables, TVariables>;
 
 export function json5(config: any): any {
@@ -311,6 +316,7 @@ export function jsonc<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: JsoncTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): JsoncTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function jsonc<TVariables extends Record<string, any>>(config: {
@@ -318,6 +324,7 @@ export function jsonc<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     options?: JsoncTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): JsoncTargetDefinition<TVariables, TVariables>;
 
 export function jsonc(config: any): any {
@@ -330,6 +337,7 @@ export function hjson<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: HjsonTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): HjsonTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function hjson<TVariables extends Record<string, any>>(config: {
@@ -337,6 +345,7 @@ export function hjson<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     options?: HjsonTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): HjsonTargetDefinition<TVariables, TVariables>;
 
 export function hjson(config: any): any {
@@ -349,6 +358,7 @@ export function yaml<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: YamlTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): YamlTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function yaml<TVariables extends Record<string, any>>(config: {
@@ -356,6 +366,7 @@ export function yaml<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     options?: YamlTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): YamlTargetDefinition<TVariables, TVariables>;
 
 export function yaml(config: any): any {
@@ -367,12 +378,14 @@ export function toml<TSchema extends z.ZodType>(config: {
     schema: TSchema;
     variables: z.infer<TSchema>;
     generate_meta?: boolean;
+    condition?: boolean;
 }): TomlTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function toml<TVariables extends Record<string, any>>(config: {
     path: string;
     variables: TVariables;
     generate_meta?: boolean;
+    condition?: boolean;
 }): TomlTargetDefinition<TVariables, TVariables>;
 
 export function toml(config: any): any {
@@ -385,6 +398,7 @@ export function ini<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: IniTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): IniTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function ini<TVariables extends Record<string, any>>(config: {
@@ -392,6 +406,7 @@ export function ini<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     options?: IniTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): IniTargetDefinition<TVariables, TVariables>;
 
 export function ini(config: any): any {
@@ -404,6 +419,7 @@ export function properties<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: PropertiesTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): PropertiesTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function properties<TVariables extends Record<string, any>>(config: {
@@ -411,6 +427,7 @@ export function properties<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     options?: PropertiesTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): PropertiesTargetDefinition<TVariables, TVariables>;
 
 export function properties(config: any): any {
@@ -422,12 +439,14 @@ export function env<TSchema extends z.ZodType>(config: {
     schema: TSchema;
     variables: z.infer<TSchema>;
     generate_meta?: boolean;
+    condition?: boolean;
 }): EnvTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function env<TVariables extends Record<string, any>>(config: {
     path: string;
     variables: TVariables;
     generate_meta?: boolean;
+    condition?: boolean;
 }): EnvTargetDefinition<TVariables, TVariables>;
 
 export function env(config: any): any {
@@ -440,6 +459,7 @@ export function xml<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: XmlTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): XmlTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function xml<TVariables extends Record<string, any>>(config: {
@@ -447,6 +467,7 @@ export function xml<TVariables extends Record<string, any>>(config: {
     variables: TVariables;
     options?: XmlTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): XmlTargetDefinition<TVariables, TVariables>;
 
 export function xml(config: any): any {
@@ -459,6 +480,7 @@ export function csv<TSchema extends z.ZodType>(config: {
     variables: z.infer<TSchema>;
     options?: CsvTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): CsvTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function csv<TVariables extends Record<string, any>[]>(config: {
@@ -466,6 +488,7 @@ export function csv<TVariables extends Record<string, any>[]>(config: {
     variables: TVariables;
     options?: CsvTargetOptions;
     generate_meta?: boolean;
+    condition?: boolean;
 }): CsvTargetDefinition<TVariables, TVariables>;
 
 export function csv(config: any): any {
@@ -477,12 +500,14 @@ export function cson<TSchema extends z.ZodType>(config: {
     schema: TSchema;
     variables: z.infer<TSchema>;
     generate_meta?: boolean;
+    condition?: boolean;
 }): CsonTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function cson<TVariables extends Record<string, any>>(config: {
     path: string;
     variables: TVariables;
     generate_meta?: boolean;
+    condition?: boolean;
 }): CsonTargetDefinition<TVariables, TVariables>;
 
 export function cson(config: any): any {
@@ -496,6 +521,7 @@ export function template<TSchema extends z.ZodType>(config: {
     engine: TemplateTargetEngine;
     template: string;
     generate_meta?: boolean;
+    condition?: boolean;
 }): TemplateTargetDefinition<TSchema, z.infer<TSchema>>;
 
 export function template<TVariables extends Record<string, any>>(config: {
@@ -504,6 +530,7 @@ export function template<TVariables extends Record<string, any>>(config: {
     engine: TemplateTargetEngine;
     template: string;
     generate_meta?: boolean;
+    condition?: boolean;
 }): TemplateTargetDefinition<TVariables, TVariables>;
 
 export function template(config: any): any {
