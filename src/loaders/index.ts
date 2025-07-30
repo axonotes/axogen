@@ -1,5 +1,4 @@
 import * as z from "zod";
-import {pretty} from "../utils/pretty.ts";
 import {zodIssuesToErrors} from "../utils/helpers.ts";
 import {
     parseTomlFile,
@@ -18,6 +17,7 @@ import {
 } from "./loaderTypes";
 import {resolve} from "node:path";
 import * as fs from "node:fs";
+import {logger} from "../utils/logger.ts";
 
 // Re-export parsers for easier imports
 export {
@@ -89,12 +89,12 @@ export function loadFile<TSchema extends z.ZodType>(
     const resolvedPath = resolve(filePath);
 
     if (!fs.existsSync(resolvedPath)) {
-        throw new Error(`File not found: ${pretty.text.accent(filePath)}`);
+        throw new Error(`File not found: ${logger.text.file(filePath)}`);
     }
 
     if (!SupportedLoadFileTypes.includes(type)) {
         throw new Error(
-            `Unsupported file type: ${pretty.text.accent(type)}. Supported types are: ${SupportedLoadFileTypes.join(", ")}`
+            `Unsupported file type: ${logger.text.accent(type)}. Supported types are: ${SupportedLoadFileTypes.join(", ")}`
         );
     }
 
@@ -165,8 +165,8 @@ export function loadFile<TSchema extends z.ZodType>(
             if (error instanceof z.ZodError) {
                 const validationErrors = zodIssuesToErrors(error.issues);
 
-                pretty.validation.errorGroup(
-                    `Loading validation failed in ${pretty.text.accent(filePath)}`,
+                logger.validation(
+                    `Loading validation failed for ${logger.text.file(filePath)}`,
                     validationErrors
                 );
                 console.log();
@@ -175,7 +175,7 @@ export function loadFile<TSchema extends z.ZodType>(
             }
 
             throw new Error(
-                `Failed to load file ${pretty.text.accent(filePath)}: ${
+                `Failed to load file ${logger.text.file(filePath)}: ${
                     error instanceof Error ? error.message : String(error)
                 }`
             );

@@ -1,7 +1,6 @@
 import {Command} from "commander";
 import {z} from "zod";
 import {commandRunner} from "./runner";
-import {pretty} from "../utils/pretty";
 import type {
     ZodAnyCommand,
     ZodAxogenConfig,
@@ -13,6 +12,7 @@ import {
     isAdvancedCommand,
     isGroupCommand,
 } from "./zod_helpers.ts";
+import {logger} from "../utils/logger.ts";
 
 export function buildDynamicCommands(
     cli: Command,
@@ -82,11 +82,11 @@ function createCommandFromConfig(
                 });
 
                 if (!result.success) {
-                    pretty.error(`Command failed: ${result.error}`);
+                    logger.error(`Command failed: ${result.error}`);
                     process.exit(result.exitCode || 1);
                 }
             } catch (error) {
-                pretty.error(
+                logger.error(
                     `Command failed: ${error instanceof Error ? error.message : error}`
                 );
                 process.exit(1);

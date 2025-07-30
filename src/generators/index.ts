@@ -22,10 +22,10 @@ import {
     CsonGenerator,
 } from "./generatorTypes";
 import {hasSecrets, unwrapUnsafe} from "../utils/secrets.ts";
-import {pretty} from "../utils/pretty.ts";
 import {isGitIgnored} from "../git/ignore-checker.ts";
 import {type ZodAnyTarget} from "../config/types";
 import {createHeaderComments, createMetadata} from "./metadata.ts";
+import {logger} from "../utils/logger.ts";
 
 export {
     EnvGenerator,
@@ -108,13 +108,13 @@ export class TargetGenerator {
         const isIgnored = this.checkGitIgnoreStatus(fullPath, targetName);
 
         if (!isIgnored) {
-            pretty.secrets.detected(
+            logger.security(
                 `Target "${targetName}" contains secrets and cannot be generated!`,
                 secretsAnalysis
             );
 
             console.log();
-            pretty.info(
+            logger.info(
                 "To resolve this, add the target to your .gitignore file or remove the secrets from the target configuration."
             );
 
@@ -142,7 +142,7 @@ export class TargetGenerator {
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : String(error);
-            pretty.warn(
+            logger.warn(
                 `Failed to check git ignore status for "${targetName}": ${message}`
             );
             return false; // Assume not ignored if check fails
@@ -339,7 +339,7 @@ export class TargetGenerator {
             if (target.backup) {
                 if (!target.backupPath) {
                     if (!isGitIgnored(".axogen/backup")) {
-                        pretty.warn(
+                        logger.warn(
                             "The .axogen/backup directory is not ignored by git. Backups may be committed."
                         );
                     }
@@ -358,9 +358,9 @@ export class TargetGenerator {
                 try {
                     await mkdir(dirname(fullBackupPath), {recursive: true});
                     await copyFile(fullSourcePath, fullBackupPath);
-                    pretty.info(`Backup created at: ${fullBackupPath}`);
+                    logger.info(`Backup created at: ${fullBackupPath}`);
                 } catch (error) {
-                    pretty.error(
+                    logger.error(
                         `Failed to create backup for target "${targetName}": ${error instanceof Error ? error.message : String(error)}`
                     );
                 }
@@ -398,7 +398,7 @@ export class TargetGenerator {
         for (const [name, target] of Object.entries(targets)) {
             // Check if the target should be generated
             if (!target.condition && target.condition !== undefined) {
-                pretty.info(
+                logger.info(
                     `Skipping target "${name}" as it does not meet the condition.`
                 );
                 continue;
@@ -409,7 +409,7 @@ export class TargetGenerator {
                 results.push({name, path, success: true});
             } catch (error) {
                 if (target.backup) {
-                    pretty.info(
+                    logger.info(
                         `No backup created for target "${name}" as it was not written due to an error.`
                     );
                 }

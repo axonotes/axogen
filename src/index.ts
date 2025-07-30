@@ -5,7 +5,7 @@
  */
 
 import {createCLI} from "./cli-helpers";
-import {pretty} from "./utils/pretty.ts";
+import {logger} from "./utils/logger.ts";
 
 /**
  * Runs the CLI with the provided arguments (or process.argv if not provided).
@@ -17,7 +17,7 @@ export async function runCLI(argv?: string[]): Promise<void> {
         const cli = await createCLI();
         await cli.parseAsync(argv || process.argv);
     } catch (error) {
-        pretty.error(`Failed to initialize CLI: ${error}`);
+        logger.error(`Failed to initialize CLI: ${error}`);
         process.exit(1);
     }
 }

@@ -3,20 +3,14 @@ import {Command} from "commander";
 export * from "./runner";
 
 import {spawn} from "node:child_process";
-import {
-    configurePretty,
-    LogLevel,
-    pretty,
-    setTheme,
-    themes,
-} from "../utils/pretty";
 import {getVersion} from "../version.ts";
-import type {ThemeName} from "../utils/themes.ts";
+import {type ThemeName, themes} from "../utils/themes.ts";
 import type {ZodAxogenConfig} from "../config/types";
 import {loadConfig} from "../config/loader.ts";
 import {createGenerateCommand} from "./commands/generate.ts";
 import {createThemeCommand} from "./commands/theme.ts";
 import {buildDynamicCommands} from "./builder.ts";
+import {configure, logger, LogLevel, setTheme} from "../utils/logger.ts";
 
 /**
  * Creates and configures the main CLI application with all commands and options.
@@ -52,12 +46,12 @@ export async function createCLI(): Promise<Command> {
             process.exit(1);
         }
 
-        configurePretty({
+        configure({
             verbose: opts.verbose || false,
-            logLevel: opts.quiet
+            level: opts.quiet
                 ? LogLevel.WARN
                 : opts.verbose
-                  ? LogLevel.DEBUG
+                  ? LogLevel.TRACE
                   : LogLevel.INFO,
             colorEnabled:
                 !opts.noColor && !process.env.NO_COLOR && process.stdout.isTTY,
@@ -75,7 +69,7 @@ export async function createCLI(): Promise<Command> {
         config = await loadConfig();
     } catch (error) {
         // If config fails to load, still allow basic commands
-        pretty.warn(
+        logger.warn(
             `Could not load config: ${error instanceof Error ? error.message : error}`
         );
         config = {};
@@ -95,7 +89,7 @@ export async function createCLI(): Promise<Command> {
     } else {
         // Add a default action to show available commands or a helpful message
         runCommand.action(() => {
-            pretty.info("No commands defined in config");
+            logger.info("No commands defined in config");
         });
     }
 
@@ -211,7 +205,7 @@ export function liveExec(
         let isCleaningUp = false;
         let originalSigintListeners: NodeJS.SignalsListener[] = [];
 
-        console.log(`${pretty.text.info("🚀 Running:")} ${command}`);
+        logger.command(command);
 
         // Spawn child process in its own process group for proper termination
         const child = spawn(command, {
@@ -243,7 +237,7 @@ export function liveExec(
                 const prefixedOutput = lines
                     .map((line: any) =>
                         line
-                            ? `${pretty.prefix.command(outputPrefix)}${line}`
+                            ? `${logger.prefix.command(outputPrefix)}${line}`
                             : line
                     )
                     .join("\n");
@@ -261,7 +255,7 @@ export function liveExec(
                 const prefixedOutput = lines
                     .map((line: any) =>
                         line
-                            ? `${pretty.prefix.command(outputPrefix)}${line}`
+                            ? `${logger.prefix.command(outputPrefix)}${line}`
                             : line
                     )
                     .join("\n");
@@ -331,12 +325,12 @@ export function liveExec(
             cleanup();
 
             if (wasTerminated) {
-                pretty.stop(`Stopped: ${command}`);
+                logger.debug(`Stopped: ${command}`);
             } else {
                 if (exitCode === 0) {
-                    pretty.success(`Completed: ${command}`);
+                    logger.success(`Completed: ${command}`);
                 } else {
-                    pretty.error(`Failed: ${command} (exit code: ${exitCode})`);
+                    logger.error(`Failed: ${command} (exit code: ${exitCode})`);
                 }
             }
 
@@ -348,7 +342,7 @@ export function liveExec(
 
         child.on("error", (error) => {
             cleanup();
-            pretty.error(`Error: ${command}`);
+            logger.error(`Error: ${command}`);
             reject(error);
         });
 

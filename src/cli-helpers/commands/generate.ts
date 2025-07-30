@@ -1,7 +1,7 @@
 import {Command} from "commander";
 import type {ZodAxogenConfig} from "../../config/types";
 import {targetGenerator} from "../../generators";
-import {pretty} from "../../utils/pretty";
+import {logger} from "../../utils/logger.ts";
 
 export function createGenerateCommand(config: ZodAxogenConfig): Command {
     return new Command("generate")
@@ -13,10 +13,10 @@ export function createGenerateCommand(config: ZodAxogenConfig): Command {
             "Show what would be generated without writing files"
         )
         .action(async (options) => {
-            pretty.loading("Generating configuration files...");
+            logger.start("Generating configuration files...");
 
             if (!config.targets || Object.keys(config.targets).length === 0) {
-                pretty.info("No targets defined in config");
+                logger.info("No targets defined in config");
                 return;
             }
 
@@ -26,11 +26,11 @@ export function createGenerateCommand(config: ZodAxogenConfig): Command {
                 : config.targets;
 
             if (options.target && !config.targets[options.target]) {
-                pretty.error(`Target "${options.target}" not found`);
+                logger.error(`Target "${options.target}" not found`);
                 console.log();
-                pretty.info("Available targets:");
+                logger.info("Available targets:");
                 Object.keys(config.targets).forEach((name) =>
-                    pretty.format.bullet(name, 1)
+                    logger.format.bullet(name, 1)
                 );
                 process.exit(1);
             }
@@ -45,7 +45,40 @@ export function createGenerateCommand(config: ZodAxogenConfig): Command {
                     }
                 );
 
-                pretty.generation.results(results, {dryRun: options.dryRun});
+                console.log();
+                console.log(logger.text.success("Results:"));
+
+                results.forEach((result) => {
+                    if (result.success) {
+                        if (options.dryRun) {
+                            logger.file(
+                                `Would generate ${logger.text.file(result.name)} at ${logger.text.muted(result.path)}`
+                            );
+                        } else {
+                            logger.file(
+                                `Generated ${logger.text.file(result.name)} at ${logger.text.muted(result.path)}`
+                            );
+                        }
+                    } else {
+                        logger.error(
+                            `${logger.text.normal("Failed to generate")} ${logger.text.error(result.name)}: ${logger.text.error(result.error || "Unknown error")}`
+                        );
+                    }
+                });
+
+                const successCount = results.filter((r) => r.success).length;
+                const errorCount = results.length - successCount;
+
+                console.log(); // Add spacing before summary
+                if (errorCount === 0) {
+                    logger.success(
+                        `${logger.text.normal("Generation complete!")} ${logger.text.success(`(${successCount} file${successCount !== 1 ? "s" : ""})`)}`
+                    );
+                } else {
+                    logger.warn(
+                        `Generation complete with errors! ${successCount} success, ${errorCount} failed`
+                    );
+                }
 
                 // Exit with error code if any targets failed
                 const hasErrors = results.some((result) => !result.success);
@@ -53,7 +86,7 @@ export function createGenerateCommand(config: ZodAxogenConfig): Command {
                     process.exit(1);
                 }
             } catch (error) {
-                pretty.error(
+                logger.error(
                     `Failed to generate files: ${error instanceof Error ? error.message : error}`
                 );
                 process.exit(1);

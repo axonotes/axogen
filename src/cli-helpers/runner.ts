@@ -3,13 +3,11 @@ import type {
     ZodAnyCommand,
     ZodAxogenConfig,
     ZodGroupCommand,
-    ZodStringCommand,
     ZodGlobalCommandContext,
     ZodSimpleCommandContext,
     ZodAdvancedCommand,
     AxogenConfig,
 } from "../config/types";
-import {pretty} from "../utils/pretty";
 import {zodIssuesToErrors} from "../utils/helpers.ts";
 import * as z from "zod";
 import {
@@ -20,6 +18,7 @@ import {
     validateArgsWithZod,
     validateOptionsWithZod,
 } from "./zod_helpers.ts";
+import {logger} from "../utils/logger.ts";
 
 export interface RunCommandOptions {
     config: ZodAxogenConfig;
@@ -232,7 +231,7 @@ export class CommandRunner {
             if (error instanceof z.ZodError) {
                 const validationErrors = zodIssuesToErrors(error.issues);
 
-                pretty.validation.errorGroup(
+                logger.validation(
                     `Command validation failed: ${command.help || "No description"}`,
                     validationErrors
                 );
@@ -255,11 +254,11 @@ export class CommandRunner {
 
         if (!subcommandName) {
             if (group.help) {
-                pretty.info(group.help);
+                logger.info(group.help);
                 console.log(); // Add spacing
             }
 
-            pretty.info("Available subcommands:");
+            logger.info("Available subcommands:");
             console.log(); // Add spacing
 
             // Create a table-like display for commands
@@ -274,9 +273,16 @@ export class CommandRunner {
             }
 
             if (commandRows.length > 0) {
-                pretty.format.table(commandRows);
+                const maxKeyLength = Math.max(
+                    ...commandRows.map((row) => row.key.length)
+                );
+
+                commandRows.forEach((row) => {
+                    const paddedKey = row.key.padEnd(maxKeyLength, " ");
+                    logger.format.bullet(`${paddedKey} - ${row.value}`);
+                });
             } else {
-                pretty.format.bullet("No subcommands available");
+                logger.format.bullet("No subcommands available");
             }
 
             return {success: true};

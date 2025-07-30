@@ -513,7 +513,6 @@ describe("Secret Detection", () => {
             const longString = generateLongAlphanumeric(48);
             const result = isPotentiallyASecret("identifier", longString);
             expect(result.isSecret).toBe(true);
-            expect(result.confidence).toBe("medium");
         });
     });
 

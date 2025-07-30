@@ -8,7 +8,6 @@ import {resolve, join} from "node:path";
 import {access, constants} from "node:fs/promises";
 import {z} from "zod";
 import {createJiti} from "jiti";
-import {pretty} from "../utils/pretty";
 import {zodIssuesToErrors} from "../utils/helpers.ts";
 import {
     type AxogenConfig,
@@ -16,6 +15,7 @@ import {
     type ConfigInput,
     type ZodAxogenConfig,
 } from "./types";
+import {logger} from "../utils/logger.ts";
 
 /**
  * Configuration loader class that handles loading and validation of Axogen configuration files.
@@ -47,7 +47,7 @@ export class ConfigLoader {
 
             if (!configInput || typeof configInput !== "object") {
                 throw new Error(
-                    `Config file at ${pretty.text.accent(resolvedPath)} must export a default object`
+                    `Config file at ${logger.text.accent(resolvedPath)} must export a default object`
                 );
             }
 
@@ -84,21 +84,21 @@ export class ConfigLoader {
             if (error instanceof z.ZodError) {
                 const validationErrors = zodIssuesToErrors(error.issues);
 
-                pretty.validation.errorGroup(
-                    `Configuration validation failed in ${pretty.text.accent(resolvedPath)}`,
+                logger.validation(
+                    `Configuration validation failed in ${logger.text.file(resolvedPath)}`,
                     validationErrors
                 );
 
                 console.log();
-                pretty.info(
-                    `${pretty.text.dimmed("💡 Check your config file structure.")}`
+                logger.info(
+                    `${logger.text.dimmed("💡 Check your config file structure.")}`
                 );
 
                 throw new Error("Configuration validation failed");
             }
 
             throw new Error(
-                `Failed to load config from ${pretty.text.accent(resolvedPath)}: ${
+                `Failed to load config from ${logger.text.file(resolvedPath)}: ${
                     error instanceof Error ? error.message : String(error)
                 }`
             );
@@ -124,7 +124,7 @@ export class ConfigLoader {
             });
         } catch (error) {
             throw new Error(
-                `jiti is required to load TypeScript config files. Install it with: ${pretty.text.accent("bun add jiti")}`
+                `jiti is required to load TypeScript config files. Install it with: ${logger.text.command("bun add jiti")}`
             );
         }
     }
@@ -164,7 +164,7 @@ export class ConfigLoader {
         }
 
         const formattedNames = defaultNames
-            .map((name) => pretty.text.accent(name))
+            .map((name) => logger.text.file(name))
             .join(", ");
         throw new Error(`No config file found. Looking for: ${formattedNames}`);
     }

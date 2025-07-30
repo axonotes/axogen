@@ -1,5 +1,5 @@
 /**
- * Theme interface defining the structure for color themes
+ * Theme interface defining color scheme structure
  */
 export interface Theme {
     name: string;
@@ -28,26 +28,6 @@ export interface Theme {
         // Background (for context)
         background: string; // Terminal background
     };
-
-    // ANSI color mappings for terminals that support them
-    ansi: {
-        black: string;
-        red: string;
-        green: string;
-        yellow: string;
-        blue: string;
-        magenta: string;
-        cyan: string;
-        white: string;
-        brightBlack: string;
-        brightRed: string;
-        brightGreen: string;
-        brightYellow: string;
-        brightBlue: string;
-        brightMagenta: string;
-        brightCyan: string;
-        brightWhite: string;
-    };
 }
 
 /**
@@ -74,24 +54,6 @@ export const astrodark: Theme = {
         dimmed: "#ADB0BB", // Medium gray - dimmed text
 
         background: "#111317", // Very dark background
-    },
-    ansi: {
-        black: "#111317",
-        red: "#F8747E",
-        green: "#75AD47",
-        yellow: "#D09214",
-        blue: "#50A4E9",
-        magenta: "#CC83E3",
-        cyan: "#00B298",
-        white: "#ADB0BB",
-        brightBlack: "#576176",
-        brightRed: "#FAA5AB",
-        brightGreen: "#A5CD84",
-        brightYellow: "#EFBD58",
-        brightBlue: "#8DC3F1",
-        brightMagenta: "#DEAEED",
-        brightCyan: "#27FFDF",
-        brightWhite: "#CACCD3",
     },
 };
 
@@ -120,24 +82,6 @@ export const aura: Theme = {
 
         background: "#110F18", // Deep dark purple-black
     },
-    ansi: {
-        black: "#110F18",
-        red: "#FF6767",
-        green: "#61FFCA",
-        yellow: "#FFCA85",
-        blue: "#A277FF",
-        magenta: "#A277FF",
-        cyan: "#61FFCA",
-        white: "#EDECEE",
-        brightBlack: "#6D6D6D",
-        brightRed: "#FF6767",
-        brightGreen: "#61FFCA",
-        brightYellow: "#FFCA85",
-        brightBlue: "#A277FF",
-        brightMagenta: "#A277FF",
-        brightCyan: "#61FFCA",
-        brightWhite: "#EDECEE",
-    },
 };
 
 /**
@@ -165,28 +109,10 @@ export const doomOne: Theme = {
 
         background: "#1b2229", // Dark blue-gray background
     },
-    ansi: {
-        black: "#1b2229",
-        red: "#ff6c6b",
-        green: "#98be65",
-        yellow: "#ecbe7b",
-        blue: "#2257a0",
-        magenta: "#a9a1e1",
-        cyan: "#5699af",
-        white: "#5b6268",
-        brightBlack: "#3f444a",
-        brightRed: "#ff6c6b",
-        brightGreen: "#98be65",
-        brightYellow: "#ecbe7b",
-        brightBlue: "#51afef",
-        brightMagenta: "#c678dd",
-        brightCyan: "#46d9ff",
-        brightWhite: "#bbc2cf",
-    },
 };
 
 /**
- * Catppuccin Mocha theme - Soothing pastel theme (original)
+ * Catppuccin Mocha theme - Soothing pastel theme
  */
 export const catppuccinMocha: Theme = {
     name: "catppuccin-mocha",
@@ -209,24 +135,6 @@ export const catppuccinMocha: Theme = {
         dimmed: "#a6adc8", // Subtext0
 
         background: "#1e1e2e", // Base
-    },
-    ansi: {
-        black: "#45475a", // Surface1
-        red: "#f38ba8", // Red
-        green: "#a6e3a1", // Green
-        yellow: "#f9e2af", // Yellow
-        blue: "#89b4fa", // Blue
-        magenta: "#f5c2e7", // Pink
-        cyan: "#94e2d5", // Teal
-        white: "#bac2de", // Subtext0
-        brightBlack: "#585b70", // Overlay1
-        brightRed: "#f38ba8", // Red (same)
-        brightGreen: "#a6e3a1", // Green (same)
-        brightYellow: "#f9e2af", // Yellow (same)
-        brightBlue: "#89b4fa", // Blue (same)
-        brightMagenta: "#f5c2e7", // Pink (same)
-        brightCyan: "#94e2d5", // Teal (same)
-        brightWhite: "#a6adc8", // Subtext1
     },
 };
 
@@ -265,4 +173,11 @@ export function listThemes(): Array<{name: string; description: string}> {
         name: theme.name,
         description: theme.description,
     }));
+}
+
+/**
+ * Validate theme name
+ */
+export function isValidTheme(name: string): name is ThemeName {
+    return name in themes;
 }

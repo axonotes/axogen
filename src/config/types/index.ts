@@ -7,9 +7,9 @@ import {type AnyTarget, json} from "./targets.ts";
 import * as z from "zod";
 import {axogenConfigSchema, type ZodAxogenConfig} from "./zod_config.ts";
 import {zodIssuesToErrors} from "../../utils/helpers.ts";
-import {pretty} from "../../utils/pretty.ts";
 import type {AxogenConfig} from "./config.ts";
 import {cmd} from "./commands.ts";
+import {logger} from "../../utils/logger.ts";
 
 /**
  * Define and validate an Axogen configuration.
@@ -31,14 +31,14 @@ export function defineConfig<TTargets extends Record<string, AnyTarget>>(
         if (error instanceof z.ZodError) {
             const validationErrors = zodIssuesToErrors(error.issues);
 
-            pretty.validation.errorGroup(
+            logger.validation(
                 `Configuration validation failed`,
                 validationErrors
             );
 
             console.log();
-            pretty.info(
-                `${pretty.text.dimmed("💡 Check your config file structure.")}`
+            logger.info(
+                `${logger.text.dimmed("💡 Check your config file structure.")}`
             );
 
             throw new Error("Configuration validation failed");

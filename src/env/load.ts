@@ -1,8 +1,8 @@
 import {z} from "zod";
 import {config, type DotenvConfigOptions} from "@dotenvx/dotenvx";
-import {pretty} from "../utils/pretty";
 import {isGitIgnored} from "../git/ignore-checker.ts";
 import {zodIssuesToErrors} from "../utils/helpers.ts";
+import {logger} from "../utils/logger.ts";
 
 interface LoadEnvConfig extends DotenvConfigOptions {
     /**
@@ -71,7 +71,7 @@ export function loadEnv<TSchema extends z.ZodType>(
     }
 
     if (!isGitIgnored(finalConfig.path) && !finalConfig.quiet) {
-        pretty.warn("The .env.axogen file is not ignored by git.");
+        logger.warn("The .env.axogen file is not ignored by git.");
     }
 
     config(finalConfig);
@@ -80,7 +80,7 @@ export function loadEnv<TSchema extends z.ZodType>(
         const result = schema.parse(process.env);
 
         if (!finalConfig.silent) {
-            pretty.success("Environment variables validated successfully");
+            logger.success("Environment variables validated successfully");
         }
 
         return result;
@@ -89,8 +89,8 @@ export function loadEnv<TSchema extends z.ZodType>(
             const validationErrors = zodIssuesToErrors(error.issues);
 
             if (!finalConfig.silent) {
-                pretty.validation.errorGroup(
-                    `Environment variable validation failed for file: ${pretty.text.accent(finalConfig.path)}`,
+                logger.validation(
+                    `Environment variable validation failed for file: ${logger.text.file(finalConfig.path)}`,
                     validationErrors
                 );
                 console.log();
@@ -103,7 +103,7 @@ export function loadEnv<TSchema extends z.ZodType>(
             throw new Error("Environment variable validation failed");
         } else {
             if (!finalConfig.silent) {
-                pretty.error(`Failed to parse environment variables: ${error}`);
+                logger.error(`Failed to parse environment variables: ${error}`);
             }
             if (finalConfig.exitOnError) {
                 process.exit(1);

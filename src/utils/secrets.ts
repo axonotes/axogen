@@ -1,8 +1,8 @@
 /**
  * Research-based secret detection
  */
-import {pretty} from "./pretty.ts";
 import * as z from "zod";
+import {logger} from "./logger.ts";
 
 export interface SecretDetectionResult {
     isSecret: boolean;
@@ -853,7 +853,7 @@ export function hasSecrets(
     ): void {
         // Prevent infinite recursion
         if (depth > maxDepth) {
-            pretty.warn(
+            logger.warn(
                 `${template}: Maximum depth of ${maxDepth} exceeded while traversing object. Skipping further traversal.`
             );
             return;
@@ -862,7 +862,7 @@ export function hasSecrets(
         // Skip unsafe objects
         if (obj && typeof obj === "object" && "_marker" in obj) {
             if (unsafeSchema.safeParse(obj).success) {
-                pretty.warn(
+                logger.warn(
                     `${template}: Skipping unsafe object at path '${currentPath}': ${obj.reason}`
                 );
                 return;
