@@ -1,0 +1,398 @@
+---
+slug: holy-shit-this-escalated-quickly
+title:
+    Holy Shit, This Escalated Quickly - Axogen v0.5.0 Is Here And I Can't Even
+authors: [oliverseifert]
+---
+
+Originally I wanted to write this article at the end of the week, but it just
+happened too much in the meantime.
+
+Since my last article about 1.5 weeks went past. I was on holidays for 5 days so
+not much progress then, but in the other time we got this shit that made me
+realize: maybe I actually built something people want?
+
+**TL;DR: My .env rant got featured in DEV's Top 7, I got so hyped I locked
+myself in my house for 4 days straight and shipped secret detection, 10+ file
+formats, nested commands, backup systems, and proper type safety. We're at
+v0.5.0 now and honestly I can't believe this is working.**
+
+<!-- truncate -->
+
+## Wait, Dev.to Featured Me in Their Top 7?!
+
+So first things first - I GOT PROMOTED ON THE DEV.TO WEEKLY TOP 7. Like how
+freaking crazy is that!!!!!
+
+[Top 7 Featured DEV Posts of the Week](https://dev.to/devteam/top-7-featured-dev-posts-of-the-week-1490)
+
+This happened 2 days ago and I'm still processing it. My little config tool rant
+sitting next to articles with thousands of views. We're at about 400 reads total
+now - not massive, but people are reading about my .env file frustrations and
+thinking "yeah, this guy gets it."
+
+While my article was doing its thing, I was so nervous that I couldn't stop
+myself from coding. I haven't left my house in 4 days... So I did what any
+reasonable developer would do: I went completely overboard with new features and
+improvements.
+
+## The Type Safety Revolution (Finally!)
+
+Remember how the old API was kinda... loose? Yeah, I fixed that.
+
+The new recommended way uses dedicated functions for each target type, and
+TypeScript now actually knows what you're doing:
+
+```typescript
+import {defineConfig, env, json} from "@axonotes/axogen";
+
+export default defineConfig({
+    targets: {
+        someService: json({
+            path: "output/someService.json",
+            variables: {
+                name: "MyService",
+                version: "1.3.0",
+            },
+        }),
+        myEnvironment: env({
+            path: "output/.env",
+            variables: {
+                PRODUCTION: "true",
+                API_KEY: "12345",
+                DATABASE_URL: "postgres://user:pass@localhost:5432/mydb",
+            },
+        }),
+    },
+});
+```
+
+You still can use the old structure, but now you get proper IntelliSense for
+each target type.
+
+## Secret Detection That Prevents Disasters
+
+Here's something that kept me up at night: what if someone accidentally pushes
+their production API keys because Axogen generated them into a non-gitignored
+file?
+
+So I built secret detection. Before generation of each target, all variables are
+scanned. If they look like secrets (API keys, passwords, tokens, etc.) and the
+target file is NOT gitignored, Axogen refuses to generate.
+
+![Secret Detection Example](/blog/2025-07-30-1.png)
+
+> Also, did you notice 😏, this time I used a screenshot to show off the colored
+> output? I know, I know, I'm a rebel.
+
+But sometimes you actually want to generate "secrets" - like development
+database URLs or test API keys. Just wrap them with `unsafe()`:
+
+```typescript
+import {defineConfig, env, unsafe} from "@axonotes/axogen";
+
+export default defineConfig({
+    targets: {
+        myEnvironment: env({
+            path: "output/.env",
+            variables: {
+                PRODUCTION: false,
+                API_KEY: unsafe("your-dev-api-key-here", "Development mode"),
+            },
+        }),
+    },
+});
+```
+
+The second parameter is required - you have to explicitly say WHY this is safe.
+No more "oops, I pushed the prod keys" moments.
+
+## Zod Schema Validation (Because Type Safety Everywhere)
+
+Remember how I said this was powered by Zod but you couldn't really use Zod's
+full power? Fixed that too.
+
+Now you can validate your target configurations before generating, and
+TypeScript will complain if your variables don't match your schema:
+
+```typescript
+import {defineConfig, json} from "@axonotes/axogen";
+import * as z from "zod";
+
+export default defineConfig({
+    targets: {
+        someService: json({
+            path: "output/someService.json",
+            schema: z.object({
+                name: z.string().describe("The name of the service"),
+                version: z.string().describe("The version of the service"),
+            }),
+            variables: {
+                name: "MyService",
+                version: 2, // TSC will error: Type 'number' is not assignable to type 'string'
+            },
+        }),
+    },
+});
+```
+
+Your editor lights up with red squiggles before you even try to generate. And if
+you somehow ignore TypeScript (why would you do that?), Zod catches it at
+runtime with beautiful error messages.
+
+## Backup System (I have trust-issue okay?)
+
+You know that moment when you run a generation command and accidentally
+overwrite something important? Yeah, me too.
+
+Axogen can now create backups of your targets before overwriting them:
+
+```typescript
+import {defineConfig, json} from "@axonotes/axogen";
+
+export default defineConfig({
+    targets: {
+        someService: json({
+            path: "output/someService.json",
+            variables: {
+                name: "MyService",
+                version: "1.3.0",
+            },
+            backup: true,
+            // backupPath: "your/own/backup/path.json", // Optional
+        }),
+    },
+});
+```
+
+Default backup location is `.axogen/backup/{{path}}`. Currently keeps one
+backup - though I'm thinking about adding more sophisticated backup options with
+retention policies.
+
+## Conditional Generation
+
+Sometimes you only want to generate certain configs under certain conditions.
+Now you can:
+
+```typescript
+export default defineConfig({
+    targets: {
+        productionSecrets: env({
+            path: "secrets/.env.prod",
+            variables: {
+                REAL_API_KEY: "super-secret-key",
+                PROD_DATABASE_URL: "postgres://prod-server/db",
+            },
+            condition: process.env.NODE_ENV === "production",
+        }),
+    },
+});
+```
+
+The `condition` is just a boolean - use it for whatever logic you want.
+Environment checks, feature flags, time-based generation, whatever makes sense
+for your use case.
+
+## Command System Overhaul (Nested Commands Are Here)
+
+The old command system was... functional. The new one is beautiful.
+
+You can now create as many nested command groups as you want, and they're all
+auto-registered with full type safety. There are actually 5 different ways to
+define commands:
+
+```typescript
+import {cmd, defineConfig, group, liveExec} from "@axonotes/axogen";
+import * as z from "zod";
+
+export default defineConfig({
+    commands: {
+        hello: "echo 'Hello, world!'", // Simple string
+        build: async (context) => {
+            // Direct function
+            console.log("Building...");
+            await liveExec("bun run build");
+        },
+        dev: cmd({
+            help: "Give a string command some help text",
+            command: "echo 'This is a dev command'",
+        }),
+        echo: cmd({
+            help: "A command that echoes the input",
+            args: {
+                input: z.string().describe("The input to echo"),
+            },
+            exec: (context) => {
+                console.log(context.args.input);
+            },
+        }),
+        database: group({
+            help: "Database management commands",
+            commands: {
+                migrate: cmd({
+                    help: "Run database migrations",
+                    exec: (context) => console.log("Running migrations..."),
+                }),
+                seed: cmd({
+                    help: "Seed the database with test data",
+                    exec: (context) => console.log("Seeding database..."),
+                }),
+                backup: group({
+                    help: "Database backup operations",
+                    commands: {
+                        create: cmd({
+                            help: "Create a database backup",
+                            options: {
+                                name: z.string().describe("Backup name"),
+                            },
+                            exec: (ctx) => {
+                                console.log(
+                                    `Creating backup: ${ctx.options.name}`
+                                );
+                            },
+                        }),
+                    },
+                }),
+            },
+        }),
+    },
+});
+```
+
+Now `axogen run database backup create --name "before-migration"` just works.
+The help system is automatically generated. IntelliSense knows about all your
+args and options. It's like having a professional CLI framework built into your
+config tool.
+
+## Environment Loading Revolution
+
+The `loadEnv` function got a complete makeover. You can now configure the
+loading process and select different files:
+
+```typescript
+import {loadEnv} from "@axonotes/axogen";
+import * as z from "zod";
+
+const env = loadEnv(
+    z.object({
+        NODE_ENV: z.enum(["development", "production"]).default("development"),
+        PORT: z.coerce.number().default(3000),
+        DATABASE_URL: z.url().describe("The URL of the database"),
+    }),
+    {
+        path: ".env.custom",
+        // Any dotenvx options work here
+        verbose: true,
+        override: true,
+    }
+);
+```
+
+Full dotenvx compatibility means you get all the advanced environment loading
+features, but with Zod validation on top.
+
+## Universal File Loading
+
+But wait, there's more! Ever wanted to load TOML, YAML, or other config formats
+with the same type safety?
+
+```typescript
+import {loadFile} from "@axonotes/axogen";
+import * as z from "zod";
+
+const config = loadFile(
+    "myFile.toml",
+    "toml",
+    z.object({
+        key1: z.string().describe("Description for key1"),
+        key2: z.number().describe("Description for key2"),
+        key3: z.boolean().describe("Description for key3"),
+    })
+);
+```
+
+Works with basically any config format you throw at it. Same Zod validation,
+same type safety, same beautiful error messages.
+
+## File Format Explosion
+
+Speaking of formats, I went a bit crazy with the supported file types:
+
+**For loading:**
+
+- json, json5, jsonc, hjson
+- yaml
+- toml
+- ini, properties
+- env
+- xml, csv, cson
+
+**For generating:**
+
+- All the loading formats, plus...
+- template (nunjucks, handlebars, mustache)
+
+## Performance & Code Quality (The Boring But Important Stuff)
+
+Version 0.5.0 isn't just about features. I spent a lot of time on:
+
+- **Better error handling**: Clearer messages, better stack traces
+- **Performance improvements**: Mainly TSC cleanup - wasn't slow before, just a
+  tiny bit faster now
+- **Code structure**: Much cleaner internals, easier to contribute to
+- **Safety improvements**: More validation, fewer edge cases
+
+The kind of stuff you don't notice until you don't have to think about it.
+
+## Join the Discord (Why Not?)
+
+Oh, and I haven't mentioned this before, but we already had a Discord server for
+Axonotes:
+
+[Join the Axonotes Discord](https://discord.gg/myBMaaDeQu)
+
+Come ask questions, complain about bugs, or just chat about config management.
+People can join and ask Axogen questions there too if they want.
+
+## What's Next?
+
+We're at v0.5.0 now, and honestly? I'm just getting started. Some big things on
+the roadmap:
+
+- **Project initialization**: `npx @axonotes/axogen init` command
+- **Secrets management**: Doppler, Vault, AWS Secrets Manager integration
+- **Runtime loading**: Import your generated configs directly into your app
+
+But right now, I'm just excited that this thing I built in frustration is
+helping some people. The few GitHub stars (about 5 now), the Discord
+conversations - it's all reminding me why I love building tools.
+
+With that in mind, Axogen is still not production ready. But I'm working on it!
+I still have 1.5 weeks of spare time to spend lol.
+
+## Try The New Hotness
+
+If you tried the old version and bounced off, give v0.5.0 a shot. If you haven't
+tried it yet, now's a great time:
+
+```bash
+npm install @axonotes/axogen@latest
+
+# Check out the updated docs for examples
+# (not updated yet XD, maybe just use this article as a guide):
+# https://axonotes.github.io/axogen/
+```
+
+The API is much more stable now, the type safety is useful, and the features
+solve real problems instead of just being neat ideas.
+
+Configuration management doesn't have to suck. Your environment variables can
+have types. Your scripts can be intelligent. Your deployments can be consistent.
+
+Still feels surreal, honestly.
+
+---
+
+_Built with ❤️, excessive caffeine, and the validation of internet strangers by
+[Oliver Seifert](https://github.com/imgajeed76). Now at v0.5.0 - still proceed
+with reasonable caution, but maybe a little less caution than before._
