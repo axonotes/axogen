@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://axonotes.github.io/axogen/">📖 Documentation</a> |
   <a href="https://axonotes.github.io/axogen/getting-started/">🚀 Quick Start</a> |
-  <a href="https://axonotes.github.io/axogen/faq/">❓ FAQ</a>
+  <a href="https://discord.gg/myBMaaDeQu">💬 Discord</a>
 </p>
 
 <p align="center">
@@ -29,42 +29,17 @@
   <a href="https://github.com/axonotes/axogen/stargazers">
     <img src="https://img.shields.io/github/stars/axonotes/axogen?style=flat-square&color=yellow" alt="stars" />
   </a>
-  <a href="https://axonotes.github.io/axogen/">
-    <img src="https://img.shields.io/badge/docs-live-brightgreen?style=flat-square" alt="docs" />
-  </a>
-  <a href="https://www.typescriptlang.org/">
-    <img src="https://img.shields.io/badge/TypeScript-native-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-  </a>
 </p>
 
 ---
 
-## Background
-
-I built Axogen out of frustration while working on
-[AxonotesCore](https://github.com/axonotes/AxonotesCore). Keeping different
-configs and environments in sync was a nightmare. What started as an internal
-tool to solve this specific problem evolved into something more general.
-
-Honestly, I'm surprised there isn't a simple, easy-to-use tool like this already
-out there. If you know of one, please let me know!
-
-> **Note:** This is very early development (v0.2.0). The API will likely change
-> as I work on improving the developer experience to be even simpler while
-> staying comprehensive.
-
 ## The Problem
 
-In monorepos or complex projects, you often end up with:
+You know that moment when you change a port number and suddenly half your
+services can't talk to each other? Or when you spend 20 minutes debugging only
+to realize you forgot to update the WebSocket URL in three different places?
 
-- `.env` files scattered everywhere
-- JSON configs that need the same values
-- Docker Compose files with hardcoded values
-- Kubernetes manifests with duplicated configuration
-- No type safety for environment variables
-- Manual syncing between different config formats
-
-Here's a real example from a typical monorepo:
+In complex projects, configuration is scattered everywhere:
 
 ```
 project/
@@ -72,7 +47,7 @@ project/
 ├── web/.env.local              # NEXT_PUBLIC_API_URL=http://...
 ├── docker-compose.yml          # hardcoded ports and URLs
 ├── k8s/configmap.yaml          # same values again
-└── terraform/variables.tf      # and again...
+└── package.json                # scripts with more hardcoded URLs
 ```
 
 Every time you change a database URL or add a service, you're hunting through
@@ -80,15 +55,16 @@ multiple files. Miss one? Good luck debugging why staging is broken.
 
 ## The Solution
 
-With Axogen, you define everything once:
+Define everything once in TypeScript, generate everywhere:
 
 ```typescript
 // axogen.config.ts
-import {z, defineConfig, loadEnv} from "@axonotes/axogen";
+import {defineConfig, loadEnv, env, json, group, cmd} from "@axonotes/axogen";
+import {z} from "zod";
 
-const env = loadEnv(
+const config = loadEnv(
     z.object({
-        DATABASE_URL: z.string().url(),
+        DATABASE_URL: z.url(),
         API_PORT: z.coerce.number().default(3001),
         WEB_PORT: z.coerce.number().default(3000),
         NODE_ENV: z
@@ -99,43 +75,58 @@ const env = loadEnv(
 
 export default defineConfig({
     targets: {
-        api: {
+        api: env({
             path: "api/.env",
-            type: "env",
             variables: {
-                DATABASE_URL: env.DATABASE_URL,
-                PORT: env.API_PORT,
-                NODE_ENV: env.NODE_ENV,
+                DATABASE_URL: config.DATABASE_URL,
+                PORT: config.API_PORT,
+                NODE_ENV: config.NODE_ENV,
             },
-        },
-        web: {
+        }),
+        web: env({
             path: "web/.env.local",
-            type: "env",
             variables: {
-                NEXT_PUBLIC_API_URL: `http://localhost:${env.API_PORT}`,
-                NODE_ENV: env.NODE_ENV,
+                NEXT_PUBLIC_API_URL: `http://localhost:${config.API_PORT}`,
+                NODE_ENV: config.NODE_ENV,
             },
-        },
-        docker: {
-            path: "docker-compose.yml",
-            type: "template",
-            template: "templates/docker-compose.njk",
+        }),
+        docker: json({
+            path: "docker-config.json",
             variables: {
-                apiPort: env.API_PORT,
-                webPort: env.WEB_PORT,
-                dbUrl: env.DATABASE_URL,
+                apiPort: config.API_PORT,
+                webPort: config.WEB_PORT,
+                dbUrl: config.DATABASE_URL,
             },
-        },
+        }),
     },
     commands: {
         dev: "docker-compose up -d",
-        build: "docker-compose build",
-        deploy: "kubectl apply -f k8s/",
+        "dev:api": `cd api && npm run dev --port ${config.API_PORT}`,
+        database: group({
+            commands: {
+                migrate: "npm run migrate",
+                seed: "npm run seed",
+                backup: group({
+                    commands: {
+                        create: cmd({
+                            help: "Create a database backup",
+                            options: {
+                                name: z.string().describe("Backup name"),
+                            },
+                            exec: (ctx) =>
+                                console.log(
+                                    `Creating backup: ${ctx.options.name}`
+                                ),
+                        }),
+                    },
+                }),
+            },
+        }),
     },
 });
 ```
 
-Create a `.env.axogen` file with your actual values:
+Put your actual values in `.env.axogen`:
 
 ```bash
 DATABASE_URL=postgresql://localhost:5432/myapp
@@ -144,27 +135,26 @@ WEB_PORT=3000
 NODE_ENV=development
 ```
 
-> **Important:** Add `.env.axogen` to your `.gitignore`! Just like any `.env`
-> file, you don't want to commit your secrets.
-
-Now one command generates all your configs:
+One command generates all your configs:
 
 ```bash
 axogen generate
 ```
 
-Your API gets its `.env`, your web app gets its `.env.local`, and your Docker
-Compose file gets generated from a template - all perfectly in sync.
+Change `API_PORT` to 4000, regenerate, and every URL automatically updates. One
+source of truth, everything else just follows.
 
 ## ✨ Features
 
-- **🛡️ Type-safe environment variables** with Zod validation
-- **📁 Multiple output formats** - `.env`, JSON, YAML, TOML, custom templates
+- **🛡️ Full type safety** with Zod validation and TypeScript IntelliSense
+- **🔐 Secret detection** prevents accidental commits of sensitive data
+- **📁 10+ file formats** - `.env`, JSON, YAML, TOML, XML, templates, and more
 - **🎨 Template engine support** (Nunjucks, Handlebars, Mustache)
-- **⚡ Custom commands** for common development tasks
+- **⚡ Nested command system** with help text and typed arguments
+- **🎯 Conditional generation** based on environment or custom logic
+- **💾 Automatic backups** before overwriting files
 - **🌍 Language-agnostic** - Works with Python, Go, Rust, Java, PHP, etc.
-- **👀 Watch mode** for development (coming soon)
-- **📦 Zero dependencies** in generated files
+- **⚡ Fast** - 10,000 configs generated in ~2 seconds
 
 ## 🚀 Quick Start
 
@@ -172,76 +162,89 @@ Compose file gets generated from a template - all perfectly in sync.
 # Install
 npm install @axonotes/axogen
 
-# Create minimal config
-echo 'import {defineConfig} from "@axonotes/axogen";
+# Create basic config
+echo 'import {defineConfig, env} from "@axonotes/axogen";
 
 export default defineConfig({
     targets: {
-        app: {
-            path: "app/.env",
-            type: "env",
+        app: env({
+            path: ".env",
             variables: {
                 NODE_ENV: "development",
                 PORT: 3000,
             },
-        },
+        }),
     },
 });' > axogen.config.ts
 
 # Generate
 axogen generate
-```
 
-**[📖 Full Documentation →](https://axonotes.github.io/axogen/)**
+# Run commands
+axogen run --help
+```
 
 ## 🤔 Why Not Just Use...?
 
-**Language-specific tools:**
+**Language-specific tools** (dotenv, Viper, dynaconf): Only work for one
+language. What about your Docker configs? Kubernetes manifests?
 
-- **dotenv, config (JS)**: Only handle JavaScript. No multi-format generation.
-- **Viper (Go), dynaconf (Python), config-rs (Rust)**: Great for their
-  languages, but what about your Docker configs? Kubernetes manifests? You're
-  back to manual syncing.
-
-**Infrastructure tools:**
-
-- **Terraform, Pulumi**: Infrastructure focus, not application config.
-- **Ansible, Chef**: Server configuration management. Different problem space.
-- **Helm, Kustomize**: Kubernetes-specific. Doesn't help with your `.env` files.
+**Infrastructure tools** (Terraform, Helm): Great for infrastructure, overkill
+for application config.
 
 **The key difference:** Axogen works for ANY project in ANY language. Your
 Python API, Go microservice, React frontend, Docker configs, and Kubernetes
 manifests - all from one TypeScript source of truth.
 
-Axogen fills the gap between simple environment management and complex
-infrastructure tools.
+## 📚 Examples
 
-## 📚 Documentation
+### Multi-Service Monorepo
 
-| Resource                                                                 | Description                                  |
-| ------------------------------------------------------------------------ | -------------------------------------------- |
-| [📖 Documentation](https://axonotes.github.io/axogen/)                   | Complete guide and API reference             |
-| [🚀 Getting Started](https://axonotes.github.io/axogen/getting-started/) | Progressive tutorial from basics to advanced |
-| [💼 Examples](https://axonotes.github.io/axogen/examples/)               | Real-world usage patterns                    |
-| [❓ FAQ](https://axonotes.github.io/axogen/faq/)                         | Common questions and comparisons             |
+```typescript
+export default defineConfig({
+    targets: {
+        auth: env({ path: "services/auth/.env", variables: {...} }),
+        api: env({ path: "services/api/.env", variables: {...} }),
+        web: env({ path: "apps/web/.env.local", variables: {...} }),
+        docker: template({
+            path: "docker-compose.yml",
+            template: "docker-compose.njk",
+            variables: config,
+        }),
+    },
+});
+```
+
+### Environment-Specific Configs
+
+```typescript
+const config = getConfig(); // Your function that returns different values based on NODE_ENV
+
+export default defineConfig({
+    targets: {
+        production: env({
+            path: "prod/.env",
+            variables: config.production,
+            condition: process.env.NODE_ENV === "production",
+        }),
+    },
+});
+```
+
+## ⚠️ Current Status
+
+This is v0.5.0 - actively developed and used for
+[AxonotesCore](https://github.com/axonotes/AxonotesCore), but still evolving.
+The API is getting more stable, but expect some changes before v1.0.
+
+Generated files are just normal `.env`, JSON, etc. - your apps never depend on
+Axogen at runtime. Worst case, you can stop using Axogen and keep the generated
+configs.
 
 ## 🤝 Contributing
 
-This is still early development, so things will change. But if you want to help:
-
-1. 🧪 Try it out and report issues
-2. 💡 Suggest API improvements
-3. 🔧 Contribute code (open an issue first to discuss)
-
-## 📊 Star History
-
-<a href="https://www.star-history.com/#axonotes/axogen&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date" />
- </picture>
-</a>
+Found a bug? Have a feature idea? Open an issue or join the
+[Discord](https://discord.gg/myBMaaDeQu).
 
 ## 📄 License
 
