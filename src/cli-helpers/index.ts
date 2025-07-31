@@ -227,7 +227,7 @@ export function liveExec(
                     .map((line: any) =>
                         line
                             ? logger.format(
-                                  `<subtle>[${outputPrefix}]</subtle>${line}`
+                                  `<secondary>[${outputPrefix}]</secondary> ${line}`
                               )
                             : line
                     )
@@ -247,7 +247,7 @@ export function liveExec(
                     .map((line: any) =>
                         line
                             ? logger.format(
-                                  `<subtle>[${outputPrefix}]</subtle>${line}`
+                                  `<secondary>[${outputPrefix}]</secondary> ${line}`
                               )
                             : line
                     )
