@@ -2,7 +2,7 @@
  * Research-based secret detection
  */
 import * as z from "zod";
-import {logger} from "./logger.ts";
+import {logger} from "./console/logger.ts";
 
 export interface SecretDetectionResult {
     isSecret: boolean;

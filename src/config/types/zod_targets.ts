@@ -173,7 +173,8 @@ export const templateTargetSchema = baseTargetSchema.extend({
         .describe("The type of the target, in this case Template"),
     engine: z
         .enum(templateTargetEngines)
-        .describe("The template engine to use"),
+        .describe("The template engine to use")
+        .default("nunjucks"),
     template: z.string().describe("The template string or file path"),
     variables: z
         .record(z.string(), z.any())

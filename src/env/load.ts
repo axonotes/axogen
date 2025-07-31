@@ -2,7 +2,7 @@ import {z} from "zod";
 import {config, type DotenvConfigOptions} from "@dotenvx/dotenvx";
 import {isGitIgnored} from "../git/ignore-checker.ts";
 import {zodIssuesToErrors} from "../utils/helpers.ts";
-import {logger} from "../utils/logger.ts";
+import {logger} from "../utils/console/logger.ts";
 
 interface LoadEnvConfig extends DotenvConfigOptions {
     /**
@@ -90,10 +90,9 @@ export function loadEnv<TSchema extends z.ZodType>(
 
             if (!finalConfig.silent) {
                 logger.validation(
-                    `Environment variable validation failed for file: ${logger.text.file(finalConfig.path)}`,
+                    `Environment variable validation failed for file: <subtle>finalConfig.path</subtle>`,
                     validationErrors
                 );
-                console.log();
             }
 
             if (finalConfig.exitOnError) {

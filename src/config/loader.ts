@@ -15,7 +15,7 @@ import {
     type ConfigInput,
     type ZodAxogenConfig,
 } from "./types";
-import {logger} from "../utils/logger.ts";
+import {logger} from "../utils/console/logger.ts";
 
 /**
  * Configuration loader class that handles loading and validation of Axogen configuration files.
@@ -47,7 +47,7 @@ export class ConfigLoader {
 
             if (!configInput || typeof configInput !== "object") {
                 throw new Error(
-                    `Config file at ${logger.text.accent(resolvedPath)} must export a default object`
+                    `Config file at ${resolvedPath} must export a default object`
                 );
             }
 
@@ -85,20 +85,19 @@ export class ConfigLoader {
                 const validationErrors = zodIssuesToErrors(error.issues);
 
                 logger.validation(
-                    `Configuration validation failed in ${logger.text.file(resolvedPath)}`,
+                    `Configuration validation failed for file: <subtle>${resolvedPath}</subtle>`,
                     validationErrors
                 );
 
-                console.log();
-                logger.info(
-                    `${logger.text.dimmed("💡 Check your config file structure.")}`
+                logger.logF(
+                    `<primary>💡</primary> <d>Check your config file structure.</d>`
                 );
 
                 throw new Error("Configuration validation failed");
             }
 
             throw new Error(
-                `Failed to load config from ${logger.text.file(resolvedPath)}: ${
+                `Failed to load config from ${resolvedPath}: ${
                     error instanceof Error ? error.message : String(error)
                 }`
             );
@@ -124,7 +123,7 @@ export class ConfigLoader {
             });
         } catch (error) {
             throw new Error(
-                `jiti is required to load TypeScript config files. Install it with: ${logger.text.command("bun add jiti")}`
+                `jiti is required to load TypeScript config files. Install it with: bun add jiti`
             );
         }
     }
@@ -163,9 +162,7 @@ export class ConfigLoader {
             }
         }
 
-        const formattedNames = defaultNames
-            .map((name) => logger.text.file(name))
-            .join(", ");
+        const formattedNames = defaultNames.join(", ");
         throw new Error(`No config file found. Looking for: ${formattedNames}`);
     }
 }

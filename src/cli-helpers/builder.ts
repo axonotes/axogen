@@ -12,7 +12,7 @@ import {
     isAdvancedCommand,
     isGroupCommand,
 } from "./zod_helpers.ts";
-import {logger} from "../utils/logger.ts";
+import {logger} from "../utils/console/logger.ts";
 
 export function buildDynamicCommands(
     cli: Command,

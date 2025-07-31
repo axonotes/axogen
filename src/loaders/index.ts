@@ -17,7 +17,7 @@ import {
 } from "./loaderTypes";
 import {resolve} from "node:path";
 import * as fs from "node:fs";
-import {logger} from "../utils/logger.ts";
+import {logger} from "../utils/console/logger.ts";
 
 // Re-export parsers for easier imports
 export {
@@ -89,12 +89,12 @@ export function loadFile<TSchema extends z.ZodType>(
     const resolvedPath = resolve(filePath);
 
     if (!fs.existsSync(resolvedPath)) {
-        throw new Error(`File not found: ${logger.text.file(filePath)}`);
+        throw new Error(`File not found: ${resolvedPath}`);
     }
 
     if (!SupportedLoadFileTypes.includes(type)) {
         throw new Error(
-            `Unsupported file type: ${logger.text.accent(type)}. Supported types are: ${SupportedLoadFileTypes.join(", ")}`
+            `Unsupported file type: ${type}. Supported types are: ${SupportedLoadFileTypes.join(", ")}`
         );
     }
 
@@ -166,7 +166,7 @@ export function loadFile<TSchema extends z.ZodType>(
                 const validationErrors = zodIssuesToErrors(error.issues);
 
                 logger.validation(
-                    `Loading validation failed for ${logger.text.file(filePath)}`,
+                    `Loading validation failed for fiel: <subtle>${resolvedPath}</subtle>`,
                     validationErrors
                 );
                 console.log();
@@ -175,7 +175,7 @@ export function loadFile<TSchema extends z.ZodType>(
             }
 
             throw new Error(
-                `Failed to load file ${logger.text.file(filePath)}: ${
+                `Failed to load file ${filePath}: ${
                     error instanceof Error ? error.message : String(error)
                 }`
             );

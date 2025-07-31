@@ -25,7 +25,7 @@ import {hasSecrets, unwrapUnsafe} from "../utils/secrets.ts";
 import {isGitIgnored} from "../git/ignore-checker.ts";
 import {type ZodAnyTarget} from "../config/types";
 import {createHeaderComments, createMetadata} from "./metadata.ts";
-import {logger} from "../utils/logger.ts";
+import {logger} from "../utils/console/logger.ts";
 
 export {
     EnvGenerator,
@@ -113,7 +113,6 @@ export class TargetGenerator {
                 secretsAnalysis
             );
 
-            console.log();
             logger.info(
                 "To resolve this, add the target to your .gitignore file or remove the secrets from the target configuration."
             );

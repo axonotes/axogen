@@ -1,12 +1,11 @@
 import {Command} from "commander";
-import {themes, type ThemeName, getTheme} from "../../utils/themes";
 import {
-    configure,
-    getConfig,
-    logger,
-    LogLevel,
-    setTheme,
-} from "../../utils/logger";
+    themes,
+    type ThemeName,
+    getTheme,
+    themeManager,
+} from "../../utils/console/themes.ts";
+import {logger} from "../../utils/console/logger.ts";
 
 export function createThemeCommand(): Command {
     const themeCmd = new Command("theme").description(
@@ -25,13 +24,12 @@ export function createThemeCommand(): Command {
         .command("current")
         .description("Show current theme information")
         .action(() => {
-            const config = getConfig();
-            const current = getTheme(config.theme);
-            logger.info(`Current theme: ${logger.text.accent(current.name)}`);
+            const current = themeManager.theme;
+            logger.logF(
+                `<muted>Current theme:</muted> <primary>${current.name}</primary>`
+            );
             console.log();
             themeSnippet(current.name as ThemeName);
-            console.log();
-            console.log(`${logger.text.dimmed(current.description)}`);
         });
 
     // Set theme for current session
@@ -47,48 +45,38 @@ export function createThemeCommand(): Command {
         .command("demo [theme]")
         .description("Show how the Theme looks like")
         .action((themeName?: string) => {
-            const config = getConfig();
-            const theme = getTheme(themeName || config.theme);
-            themeDemo(theme.name);
+            const theme = themeManager.theme;
+            themeDemo(themeName || theme.name);
         });
 
     // Show help when no subcommand is provided
     themeCmd.action(() => {
         logger.info("Theme management commands:");
         console.log();
-        logger.format.bullet("list|ls", 1);
-        logger.format.bullet("current", 1);
-        logger.format.bullet("set <theme>", 1);
-        logger.format.bullet("demo [theme]", 1);
+        logger.bullet("list|ls", 1);
+        logger.bullet("current", 1);
+        logger.bullet("set <subtle>\\<theme></subtle>", 1);
+        logger.bullet("demo <subtle>[theme]</subtle>", 1);
     });
 
     return themeCmd;
 }
 
 function themeSnippet(themeName: ThemeName) {
-    const originalConfig = getConfig();
-    configure({
-        level: LogLevel.TRACE, // Set to TRACE for comprehensive demo
-        theme: themeName,
-    });
-    const theme = getTheme(themeName);
+    const originalTheme = themeManager.theme;
+    themeManager.setTheme(themeName);
 
-    console.log(`${logger.text.accent("●")} ${logger.text.accent(themeName)}`);
-    console.log(`  ${logger.text.muted(theme.description)}`);
-    console.log(
-        `  ${logger.text.success("✓")} ${logger.text.error("✗")} ${logger.text.warning("!")} ${logger.text.info("i")} ${logger.text.file("+")} ${logger.text.command(">")}`
+    logger.logF(`<primary>● ${themeManager.theme.name}</primary>`);
+    logger.logF(`  <subtle>${themeManager.theme.description}</subtle>`);
+    logger.logF(
+        `  <success>Success</success> <error>Error</error> <warning>Warning</warning> <primary>Primary</primary> <secondary>Secondary</secondary>`
     );
     console.log();
 
-    configure(originalConfig);
+    themeManager.setTheme(originalTheme.name);
 }
 
 function themeSet(themeName: string) {
-    const originalConfig = getConfig();
-    configure({
-        level: LogLevel.TRACE, // Set to TRACE for comprehensive demo
-    });
-
     const themeNames = Object.keys(themes) as ThemeName[];
 
     if (!themeNames.includes(themeName as ThemeName)) {
@@ -97,24 +85,20 @@ function themeSet(themeName: string) {
         return;
     }
 
-    setTheme(themeName as ThemeName);
-    logger.success(`Theme set to ${logger.text.accent(themeName)}`);
+    themeManager.setTheme(themeName, true);
+    logger.success(`Theme set to <primary>${themeName}</primary>`);
 
     // Show a quick preview
-    const theme = themes[themeName as ThemeName];
-    logger.info(theme.description);
-
-    // Restore original config
-    configure(originalConfig);
+    logger.logF(`<subtle>${themeManager.theme.description}</subtle>`);
+    logger.logF(
+        `<success>Success</success> <error>Error</error> <warning>Warning</warning> <primary>Primary</primary> <secondary>Secondary</secondary>`
+    );
 }
 
 function themeList() {
-    const originalConfig = getConfig();
-    configure({
-        level: LogLevel.TRACE, // Set to TRACE for comprehensive demo
-    });
+    const originalTheme = themeManager.theme;
 
-    logger.format.header("AVAILABLE THEMES");
+    logger.header("AVAILABLE THEMES");
     console.log();
 
     const themeNames = Object.keys(themes) as ThemeName[];
@@ -123,22 +107,18 @@ function themeList() {
         themeSnippet(themeName);
     }
 
-    logger.info(
-        `Set a theme: ${logger.text.command("axogen theme set <name>")}`
+    logger.logF(
+        `Set a theme: <secondary>axogen theme set \\<name></secondary>`
     );
-    logger.info(
-        `Demo a theme: ${logger.text.command("axogen theme demo <name>")}`
+    logger.logF(
+        `Demo a theme: <secondary>axogen theme demo \\<name></secondary>`
     );
 
-    // Restore original config
-    configure(originalConfig);
+    themeManager.setTheme(originalTheme.name);
 }
 
 function themeDemo(themeName: string) {
-    const originalConfig = getConfig();
-    configure({
-        level: LogLevel.TRACE, // Set to TRACE for comprehensive demo
-    });
+    const originalTheme = themeManager.theme;
 
     const themeNames = Object.keys(themes) as ThemeName[];
 
@@ -148,51 +128,46 @@ function themeDemo(themeName: string) {
         return;
     }
 
-    setTheme(themeName as ThemeName);
-    const theme = themes[themeName as ThemeName];
+    themeManager.setTheme(themeName);
 
-    logger.format.header(`${themeName.toUpperCase()} THEME DEMO`);
-    logger.info(theme.description);
+    logger.header(`${themeName.toUpperCase()} THEME DEMO`);
+    logger.info(themeManager.theme.description);
     console.log();
 
     // Show comprehensive demo
-    logger.format.divider("Project Status");
+    logger.divider("Project Status");
     logger.start("Initializing project...");
     logger.info("Loading configuration files");
     logger.success("Configuration loaded successfully");
     logger.warn("Some dependencies need updates");
     logger.error("Build failed on TypeScript compilation");
-    logger.ready("Project ready for development");
     console.log();
 
-    logger.format.divider("File Operations");
-    logger.file("Created: src/components/Header.tsx");
-    logger.file("Updated: package.json");
-    logger.file("Generated: dist/bundle.js");
+    logger.divider("File Operations");
+    logger.file("Created", "src/components/Header.tsx");
+    logger.file("Updated", "package.json");
+    logger.file("Generated", "dist/bundle.js");
     console.log();
 
-    logger.format.divider("Command Execution");
+    logger.divider("Command Execution");
     logger.command("npm run build");
-    console.log(`${logger.prefix.command("BUILD")}Compiling TypeScript...`);
-    console.log(`${logger.prefix.command("BUILD")}Bundling assets...`);
-    console.log(
-        `${logger.prefix.command("BUILD")}Optimizing for production...`
+    logger.prefix.command("BUILD", "Compiling TypeScript...");
+    logger.prefix.command("BUILD", "Bundling assets...");
+    logger.prefix.command("BUILD", "Optimizing for production...");
+    console.log();
+
+    logger.divider("Text Styling");
+    logger.logF(
+        `Colors: <success>Success</success> <error>Error</error> <warning>Warning</warning> <primary>Primary</primary> <secondary>Secondary</secondary>`
+    );
+    logger.logF(
+        `Utilities: <d>Dimmed</d> <subtle>Subtle</subtle> <muted>Muted</muted>`
     );
     console.log();
 
-    logger.format.divider("Text Styling");
-    logger.info(
-        `Colors: ${logger.text.success("Success")} ${logger.text.error("Error")} ${logger.text.warning("Warning")} ${logger.text.accent("Accent")}`
-    );
-    logger.info(
-        `Utilities: ${logger.text.file("Files")} ${logger.text.command("Commands")} ${logger.text.muted("Muted text")}`
-    );
-    console.log();
-
-    logger.info(
-        `Like this theme? Set it with: ${logger.text.command(`axogen theme set ${themeName}`)}`
+    logger.logF(
+        `Like this theme? Set it with: <secondary>axogen theme set ${themeName}</secondary>`
     );
 
-    // Restore original config
-    configure(originalConfig);
+    themeManager.setTheme(originalTheme.name);
 }

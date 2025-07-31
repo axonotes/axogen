@@ -9,7 +9,7 @@ import {axogenConfigSchema, type ZodAxogenConfig} from "./zod_config.ts";
 import {zodIssuesToErrors} from "../../utils/helpers.ts";
 import type {AxogenConfig} from "./config.ts";
 import {cmd} from "./commands.ts";
-import {logger} from "../../utils/logger.ts";
+import {logger} from "../../utils/console/logger.ts";
 
 /**
  * Define and validate an Axogen configuration.
@@ -36,9 +36,8 @@ export function defineConfig<TTargets extends Record<string, AnyTarget>>(
                 validationErrors
             );
 
-            console.log();
-            logger.info(
-                `${logger.text.dimmed("💡 Check your config file structure.")}`
+            logger.logF(
+                `<primary>💡</primary> <d>Check your config file structure.</d>`
             );
 
             throw new Error("Configuration validation failed");

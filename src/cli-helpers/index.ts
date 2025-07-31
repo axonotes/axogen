@@ -4,13 +4,13 @@ export * from "./runner";
 
 import {spawn} from "node:child_process";
 import {getVersion} from "../version.ts";
-import {type ThemeName, themes} from "../utils/themes.ts";
+import {themeManager, type ThemeName, themes} from "../utils/console/themes.ts";
 import type {ZodAxogenConfig} from "../config/types";
 import {loadConfig} from "../config/loader.ts";
 import {createGenerateCommand} from "./commands/generate.ts";
 import {createThemeCommand} from "./commands/theme.ts";
 import {buildDynamicCommands} from "./builder.ts";
-import {configure, logger, LogLevel, setTheme} from "../utils/logger.ts";
+import {logger} from "../utils/console/logger.ts";
 
 /**
  * Creates and configures the main CLI application with all commands and options.
@@ -46,21 +46,10 @@ export async function createCLI(): Promise<Command> {
             process.exit(1);
         }
 
-        configure({
-            verbose: opts.verbose || false,
-            level: opts.quiet
-                ? LogLevel.WARN
-                : opts.verbose
-                  ? LogLevel.TRACE
-                  : LogLevel.INFO,
-            colorEnabled:
-                !opts.noColor && !process.env.NO_COLOR && process.stdout.isTTY,
-            theme: opts.theme as ThemeName,
-        });
-
-        if (opts.theme) {
-            setTheme(opts.theme as ThemeName);
-        }
+        themeManager.setTheme(opts.theme);
+        themeManager.colorOutput(
+            !opts.noColor && !process.env.NO_COLOR && process.stdout.isTTY
+        );
     });
 
     // Load config once
@@ -237,7 +226,9 @@ export function liveExec(
                 const prefixedOutput = lines
                     .map((line: any) =>
                         line
-                            ? `${logger.prefix.command(outputPrefix)}${line}`
+                            ? logger.format(
+                                  `<subtle>[${outputPrefix}]</subtle>${line}`
+                              )
                             : line
                     )
                     .join("\n");
@@ -255,7 +246,9 @@ export function liveExec(
                 const prefixedOutput = lines
                     .map((line: any) =>
                         line
-                            ? `${logger.prefix.command(outputPrefix)}${line}`
+                            ? logger.format(
+                                  `<subtle>[${outputPrefix}]</subtle>${line}`
+                              )
                             : line
                     )
                     .join("\n");
@@ -325,12 +318,14 @@ export function liveExec(
             cleanup();
 
             if (wasTerminated) {
-                logger.debug(`Stopped: ${command}`);
+                logger.logF(`Stopped <subtle>${command}</subtle>`);
             } else {
                 if (exitCode === 0) {
                     logger.success(`Completed: ${command}`);
                 } else {
-                    logger.error(`Failed: ${command} (exit code: ${exitCode})`);
+                    logger.error(
+                        `Failed: ${command} <subtle>(${exitCode})</subtle>`
+                    );
                 }
             }
 

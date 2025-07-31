@@ -1,7 +1,7 @@
 import {Command} from "commander";
 import type {ZodAxogenConfig} from "../../config/types";
 import {targetGenerator} from "../../generators";
-import {logger} from "../../utils/logger.ts";
+import {logger} from "../../utils/console/logger.ts";
 
 export function createGenerateCommand(config: ZodAxogenConfig): Command {
     return new Command("generate")
@@ -13,6 +13,7 @@ export function createGenerateCommand(config: ZodAxogenConfig): Command {
             "Show what would be generated without writing files"
         )
         .action(async (options) => {
+            console.log();
             logger.start("Generating configuration files...");
 
             if (!config.targets || Object.keys(config.targets).length === 0) {
@@ -20,17 +21,19 @@ export function createGenerateCommand(config: ZodAxogenConfig): Command {
                 return;
             }
 
+            const startTime = Date.now();
+
             // Determine which targets to generate
             const targetsToGenerate = options.target
                 ? {[options.target]: config.targets[options.target]}
                 : config.targets;
 
             if (options.target && !config.targets[options.target]) {
-                logger.error(`Target "${options.target}" not found`);
+                logger.error(`✗ Target "${options.target}" not found`);
                 console.log();
                 logger.info("Available targets:");
                 Object.keys(config.targets).forEach((name) =>
-                    logger.format.bullet(name, 1)
+                    logger.bullet(name, 1)
                 );
                 process.exit(1);
             }
@@ -46,37 +49,40 @@ export function createGenerateCommand(config: ZodAxogenConfig): Command {
                 );
 
                 console.log();
-                console.log(logger.text.success("Results:"));
+                logger.success("Results:");
 
                 results.forEach((result) => {
                     if (result.success) {
                         if (options.dryRun) {
                             logger.file(
-                                `Would generate ${logger.text.file(result.name)} at ${logger.text.muted(result.path)}`
+                                `Would generate <b>${result.name}</b>`,
+                                result.path
                             );
                         } else {
                             logger.file(
-                                `Generated ${logger.text.file(result.name)} at ${logger.text.muted(result.path)}`
+                                `Generated <b>${result.name}</b>`,
+                                result.path
                             );
                         }
                     } else {
-                        logger.error(
-                            `${logger.text.normal("Failed to generate")} ${logger.text.error(result.name)}: ${logger.text.error(result.error || "Unknown error")}`
+                        logger.logF(
+                            `<error>✗</error> Failed to generate <b>${result.name}</b>: <error>${result.error || "Unknown error"}</error>`
                         );
                     }
                 });
 
                 const successCount = results.filter((r) => r.success).length;
                 const errorCount = results.length - successCount;
+                const duration = (Date.now() - startTime).toFixed(2);
 
                 console.log(); // Add spacing before summary
                 if (errorCount === 0) {
-                    logger.success(
-                        `${logger.text.normal("Generation complete!")} ${logger.text.success(`(${successCount} file${successCount !== 1 ? "s" : ""})`)}`
+                    logger.logF(
+                        `<success>Generation complete!</success> <muted>${successCount} file${successCount !== 1 ? "s" : ""}</muted> <subtle>[${duration}ms]</subtle>`
                     );
                 } else {
-                    logger.warn(
-                        `Generation complete with errors! ${successCount} success, ${errorCount} failed`
+                    logger.logF(
+                        `<warning>Generation complete with errors!</warning> <muted>${successCount} success, ${errorCount} failed</muted> <subtle>[${duration}ms]</subtle>`
                     );
                 }
 

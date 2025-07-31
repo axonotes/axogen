@@ -18,7 +18,7 @@ import {
     validateArgsWithZod,
     validateOptionsWithZod,
 } from "./zod_helpers.ts";
-import {logger} from "../utils/logger.ts";
+import {logger} from "../utils/console/logger.ts";
 
 export interface RunCommandOptions {
     config: ZodAxogenConfig;
@@ -236,7 +236,6 @@ export class CommandRunner {
                     validationErrors
                 );
 
-                console.log(); // Add spacing
                 return {success: false, error: "Validation failed"};
             }
             return {
@@ -279,10 +278,10 @@ export class CommandRunner {
 
                 commandRows.forEach((row) => {
                     const paddedKey = row.key.padEnd(maxKeyLength, " ");
-                    logger.format.bullet(`${paddedKey} - ${row.value}`);
+                    logger.bullet(`${paddedKey} - ${row.value}`);
                 });
             } else {
-                logger.format.bullet("No subcommands available");
+                logger.bullet("No subcommands available");
             }
 
             return {success: true};

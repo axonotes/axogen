@@ -9,21 +9,17 @@ import {
     rmSync,
     writeFileSync,
 } from "fs";
-import {configure, getConfig, logger, LogLevel} from "./src/utils/logger";
-import {getTheme} from "./src/utils/themes";
+import {logger} from "./src/utils/console/logger";
+import {getTheme, themeManager} from "./src/utils/console/themes";
 
 // Read version from package.json
 const packageJson = JSON.parse(readFileSync("package.json", "utf-8"));
 const version = packageJson.version;
 
-configure({
-    level: LogLevel.TRACE,
-});
-
 async function main() {
     const startTime = Date.now();
 
-    logger.format.header("Building Axogen CLI and Library");
+    logger.header("Building Axogen CLI and Library");
     console.log(); // Add some spacing
 
     setupDirectories();
@@ -49,12 +45,13 @@ async function main() {
 
     const duration = Date.now() - startTime;
     console.log(); // Add spacing before final summary
-    logger.success(`Build completed in ${duration}ms`);
+    logger.success(`Build completed <muted>[${duration}ms]</muted>`);
 
     console.log(); // Add spacing
-    logger.format.divider("Next Steps");
-    logger.info(`Run ${logger.text.command("./bin/axogen --version")} to test`);
-    logger.info("Library built with tsup for better IDE support!");
+    logger.divider("Next Steps");
+    logger.info(`Run <secondary>./bin/axogen --version</secondary> to test`);
+    logger.divider();
+    console.log(); // Add spacing
 }
 
 function setupDirectories() {
@@ -101,7 +98,7 @@ async function typeCheck() {
         // Fallback: if tsc not available, warn but continue
         logger.warn("TypeScript compiler not found, skipping type check");
         logger.info(
-            `Install typescript globally: ${logger.text.command("bun add -g typescript")}`
+            `Install typescript globally: <secondary>bun add -g typescript</secondary>`
         );
     }
 }
@@ -185,7 +182,7 @@ async function buildLibraryWithTsup() {
         return true;
     } catch (error) {
         logger.warn("tsup not available, falling back to bun build");
-        logger.info(`Install tsup: ${logger.text.command("bun add -D tsup")}`);
+        logger.info(`Install tsup: <secondary>bun add -D tsup</secondary>`);
 
         // Fallback to original bun build method
         return await buildLibraryFallback();
@@ -242,14 +239,13 @@ async function generateTypes() {
     } catch (error) {
         logger.warn("Could not generate TypeScript declarations");
         logger.info(
-            `Install typescript: ${logger.text.command("bun add -D typescript")}`
+            `Install typescript: <secondary>bun add -D typescript</secondary>`
         );
     }
 }
 
 function handleBuildFailure(result: Bun.BuildOutput) {
-    const config = getConfig();
-    const theme = getTheme(config.theme);
+    const theme = themeManager.theme;
 
     if (result.logs.length > 0) {
         // Group logs by level
@@ -262,7 +258,7 @@ function handleBuildFailure(result: Bun.BuildOutput) {
             warnings.length > 0 && `${warnings.length} warnings`,
         ].filter(Boolean);
 
-        const subtitle = `${logger.text.muted("Found:")} ${result.logs.length} build issue${result.logs.length !== 1 ? "s" : ""} ${logger.text.muted(summaryParts.join(" • "))}`;
+        const subtitle = `<muted>Found:</muted> ${result.logs.length} build issue${result.logs.length !== 1 ? "s" : ""} <muted>${summaryParts.join(" • ")}</muted>`;
 
         // Map logs to items
         const items = result.logs.map((log) => {
@@ -272,7 +268,6 @@ function handleBuildFailure(result: Bun.BuildOutput) {
 
             return {
                 level: log.level,
-                icon: "•",
                 key: location,
                 description: log.message,
                 extra: log.name,
@@ -280,17 +275,16 @@ function handleBuildFailure(result: Bun.BuildOutput) {
         });
 
         logger.logIssues({
-            title: "Build failed!",
-            titleIcon: "✗",
+            title: "✗ Build failed!",
             subtitle,
             levels: {
-                error: {color: theme.colors.error, icon: "❌"},
-                warning: {color: theme.colors.warning, icon: "⚠️"},
+                error: {color: "error"},
+                warning: {color: "warning"},
             },
             items,
             footer: "Fix these issues and rebuild",
             footerIcon: "!",
-            footerIconColor: theme.colors.warning,
+            footerIconColor: "warning",
         });
     } else {
         // No specific logs, just show generic error
@@ -311,7 +305,7 @@ ${builtCode}`;
     writeFileSync("bin/axogen", executableContent);
     chmodSync("bin/axogen", "755");
 
-    logger.file("Executable created at bin/axogen");
+    logger.file("Executable created", "bin/axogen");
 }
 
 function cleanup() {

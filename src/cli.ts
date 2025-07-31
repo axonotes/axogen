@@ -5,7 +5,7 @@
  */
 
 import {createCLI} from "./cli-helpers";
-import {logger} from "./utils/logger.ts";
+import {logger} from "./utils/console/logger.ts";
 
 // Run CLI
 createCLI()
