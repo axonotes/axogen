@@ -90,7 +90,7 @@ export const advancedCommandSchema = z.object({
         .default({}),
     exec: z
         .custom<CommandFunction>((val) => {
-            return typeof val === "function" && val.length === 1;
+            return typeof val === "function";
         })
         .describe("The function to execute for the command"),
 });
@@ -100,7 +100,7 @@ export const simpleStringCommandSchema = z
     .describe("A simple command string, which is executed directly");
 export const simpleCommandFunctionSchema = z
     .custom<SimpleCommandFunction>((val) => {
-        return typeof val === "function" && val.length === 1;
+        return typeof val === "function";
     })
     .describe("A simple command function that takes a context object");
 
