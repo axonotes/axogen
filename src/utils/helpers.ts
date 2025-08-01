@@ -271,23 +271,41 @@ function formatFieldPath(path: PropertyKey[]): string {
 }
 
 /**
+ * Checks if a value is a plain object (dictionary) that can be safely merged
+ * Returns true only for objects created with {} or new Object()
+ * Returns false for class instances, arrays, null, primitives, etc.
+ */
+function isPlainObject(obj: any): boolean {
+    if (typeof obj !== "object" || obj === null) return false;
+    if (Array.isArray(obj)) return false;
+
+    // Check if it's a plain object (created with {} or new Object())
+    const proto = Object.getPrototypeOf(obj);
+    return proto === Object.prototype || proto === null;
+}
+
+/**
  * Deeply merges two objects, combining properties recursively
- * If a property is an object in both target and source, it merges them recursively.
- * @param target
- * @param source
+ * Only merges plain objects (dictionaries) - overwrites complex objects like class instances
+ * @param target - The target object to merge into
+ * @param source - The source object to merge from
+ * @returns A new object with merged properties
  */
 export function deepMerge(target: any, source: any) {
     const result = {...target};
+
     for (const key in source) {
-        if (
-            source[key] &&
-            typeof source[key] === "object" &&
-            !Array.isArray(source[key])
-        ) {
-            result[key] = deepMerge(target[key] || {}, source[key]);
+        const sourceValue = source[key];
+        const targetValue = target[key];
+
+        // Only deep merge if both values are plain objects
+        if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
+            result[key] = deepMerge(targetValue, sourceValue);
         } else {
-            result[key] = source[key];
+            // Otherwise, overwrite with source value
+            result[key] = sourceValue;
         }
     }
+
     return result;
 }
