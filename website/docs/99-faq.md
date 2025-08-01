@@ -209,8 +209,8 @@ normally.
 <details>
 <summary>Does this slow down my builds?</summary>
 
-Shouldn't! Generation is pretty fast (10,000 configs in ~2 seconds), and you
-only run it when config actually changes.
+Shouldn't! Generation is pretty fast (11,000 configs in ~3 seconds), and you
+only run it when config actually changes. That's ~0.3ms per config file!
 
 That said, I haven't optimized for build performance yet. If it becomes a
 bottleneck, let me know!
