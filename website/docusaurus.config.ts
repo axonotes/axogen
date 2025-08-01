@@ -29,6 +29,14 @@ const config: Config = {
         locales: ["en"],
     },
 
+    scripts: [
+        {
+            src: "https://plausible.axonotes.ch/js/script.js",
+            defer: true,
+            "data-domain": "axonotes.github.io/axogen",
+        },
+    ],
+
     presets: [
         [
             "classic",
