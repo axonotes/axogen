@@ -29,14 +29,11 @@ const config: Config = {
         locales: ["en"],
     },
 
-    headTags: [
+    scripts: [
         {
-            tagName: "script",
-            attributes: {
-                defer: true,
-                "data-domain": "axonotes.github.io/axogen",
-                src: "https://plausible.axonotes.ch/js/script.js",
-            },
+            defer: true,
+            "data-domain": "axonotes.github.io/axogen",
+            src: "https://plausible.axonotes.ch/js/script.js",
         },
     ],
 
