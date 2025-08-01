@@ -5,7 +5,15 @@
  * Handles security checks for secrets detection and Git ignore validation.
  */
 
-import {writeFile, mkdir, copyFile} from "node:fs/promises";
+import {
+    writeFile,
+    mkdir,
+    copyFile,
+    access,
+    constants,
+    readdir,
+    unlink,
+} from "node:fs/promises";
 import {dirname, resolve} from "node:path";
 import {
     EnvGenerator,
@@ -23,7 +31,11 @@ import {
 } from "./generatorTypes";
 import {hasSecrets, unwrapUnsafe} from "../utils/secrets.ts";
 import {isGitIgnored} from "../git/ignore-checker.ts";
-import {type ZodAnyTarget} from "../config/types";
+import {
+    type ZodAnyTarget,
+    type ZodBackupTarget,
+    type ZodBackupTargetOptions,
+} from "../config/types";
 import {createHeaderComments, createMetadata} from "./metadata.ts";
 import {logger} from "../utils/console/logger.ts";
 
@@ -312,6 +324,204 @@ export class TargetGenerator {
         }
     }
 
+    private getBackupOptions(target: ZodAnyTarget): ZodBackupTargetOptions {
+        if (!target.backup) {
+            return {
+                enabled: false,
+                folder: `.axogen/backup/${target.path}`,
+                maxBackups: 5,
+                onConflict: "increment",
+            };
+        }
+
+        if (typeof target.backup === "boolean") {
+            return {
+                enabled: target.backup,
+                folder: `.axogen/backup/${target.path}`,
+                maxBackups: 5,
+                onConflict: "increment",
+            };
+        }
+
+        return {
+            enabled: target.backup.enabled ?? false,
+            folder: target.backup.folder || `.axogen/backup/${target.path}`,
+            maxBackups: target.backup.maxBackups ?? 5,
+            onConflict: target.backup.onConflict || "increment",
+        };
+    }
+
+    private async createBackup(
+        targetName: string,
+        target: ZodAnyTarget,
+        options: GenerateOptions = {}
+    ) {
+        const backupOptions = this.getBackupOptions(target);
+
+        if (
+            typeof backupOptions.enabled === "undefined" ||
+            typeof backupOptions.folder === "undefined" ||
+            typeof backupOptions.maxBackups === "undefined" ||
+            typeof backupOptions.onConflict === "undefined"
+        ) {
+            throw new Error(
+                `Something went wrong with the backup options for target "${targetName}". This is likely a bug in Axogen. Please report it!`
+            );
+        }
+
+        if (backupOptions.enabled) {
+            if (!isGitIgnored(backupOptions.folder)) {
+                logger.warn(
+                    `The ${backupOptions.folder} directory is not ignored by git. Backups may be committed. Make sure you dont commit sensitive data!`
+                );
+            }
+
+            const fileExtension =
+                target.path.split(".").pop() || target.type || "bak";
+            let backupFilePath: string;
+            let index = 0;
+            let shouldCreateBackup = true;
+            let throwError = "";
+            const MAX_ATTEMPTS = Math.max(1000, backupOptions.maxBackups);
+
+            // Find available backup path
+            do {
+                if (index >= MAX_ATTEMPTS) {
+                    throwError = `Failed to find a unique backup path for target "${targetName}" after ${MAX_ATTEMPTS} attempts.`;
+                    backupFilePath = "";
+                    shouldCreateBackup = false;
+                    break;
+                }
+
+                const indexString = index > 0 ? `_${index}` : "";
+                backupFilePath = resolve(
+                    options.baseDir || process.cwd(),
+                    `${backupOptions.folder}/${targetName}_${new Date().toISOString()}${indexString}.${fileExtension}`
+                );
+
+                try {
+                    // If this succeeds, file exists - handle conflict
+                    await access(backupFilePath, constants.F_OK);
+
+                    switch (backupOptions.onConflict) {
+                        case "increment":
+                            index++;
+                            continue; // Try next index
+                        case "overwrite":
+                            break; // Use this path
+                        case "skip":
+                            logger.info(
+                                `Skipping backup for target "${targetName}" as backup already exists.`
+                            );
+                            shouldCreateBackup = false;
+                            break;
+                        case "fail":
+                            throwError = `Backup file already exists at "${backupFilePath}" for target "${targetName}".`;
+                            backupFilePath = "";
+                            shouldCreateBackup = false;
+                            break;
+                    }
+                    break; // Exit loop (for overwrite, skip, fail cases)
+                } catch (_) {
+                    // File doesn't exist - perfect, use this path
+                    break;
+                }
+            } while (true);
+
+            if (throwError) {
+                throw new Error(throwError);
+            }
+
+            // Create backup if needed
+            if (shouldCreateBackup && backupFilePath) {
+                const fullSourcePath = resolve(
+                    options.baseDir || process.cwd(),
+                    target.path
+                );
+
+                // Check if source file exists before trying to backup
+                try {
+                    await access(fullSourcePath, constants.F_OK);
+                } catch {
+                    // Source file doesn't exist, no backup needed
+                    logger.info(
+                        `No backup created for target "${targetName}" - source file does not exist.`
+                    );
+                    return;
+                }
+
+                try {
+                    await mkdir(backupOptions.folder, {recursive: true});
+                    await copyFile(fullSourcePath, backupFilePath);
+                    logger.info(`Backup created at:  ${backupFilePath}`);
+
+                    // Clean up old backups if we exceed maxBackups
+                    try {
+                        const backupDir = dirname(backupFilePath);
+                        const files = await readdir(backupDir);
+
+                        // Filter files that match our target pattern
+                        const targetBackupFiles = files
+                            .filter((file) => {
+                                // Must start with "targetName_" and end with ".extension"
+                                if (
+                                    !file.startsWith(`${targetName}_`) ||
+                                    !file.endsWith(`.${fileExtension}`)
+                                ) {
+                                    return false;
+                                }
+
+                                // Extract the middle part (should be ISO date + optional _index)
+                                const middle = file.slice(
+                                    `${targetName}_`.length,
+                                    -`.${fileExtension}`.length
+                                );
+
+                                // Should match ISO date pattern (with optional _index suffix)
+                                const isoPattern =
+                                    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z(_\d+)?$/;
+                                return isoPattern.test(middle);
+                            })
+                            .map((file) => resolve(backupDir, file))
+                            .sort(); // ISO dates in filenames sort correctly alphabetically (oldest first)
+
+                        // Delete excess backups (keep newest, delete oldest)
+                        if (
+                            targetBackupFiles.length > backupOptions.maxBackups
+                        ) {
+                            const filesToDelete = targetBackupFiles.slice(
+                                0,
+                                targetBackupFiles.length -
+                                    backupOptions.maxBackups
+                            );
+
+                            for (const filePath of filesToDelete) {
+                                try {
+                                    await unlink(filePath);
+                                    logger.info(
+                                        `Deleted old backup: ${filePath}`
+                                    );
+                                } catch (error) {
+                                    logger.warn(
+                                        `Failed to delete old backup ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+                                    );
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        logger.warn(
+                            `Failed to clean up old backups: ${error instanceof Error ? error.message : String(error)}`
+                        );
+                    }
+                } catch (error) {
+                    logger.error(
+                        `Failed to create backup for target "${targetName}": ${error instanceof Error ? error.message : String(error)}`
+                    );
+                }
+            }
+        }
+    }
+
     /**
      * Generates content for a target and writes it to the file system.
      * Creates necessary parent directories and handles dry-run mode.
@@ -335,35 +545,7 @@ export class TargetGenerator {
         );
 
         if (!dryRun) {
-            if (target.backup) {
-                if (!target.backupPath) {
-                    if (!isGitIgnored(".axogen/backup")) {
-                        logger.warn(
-                            "The .axogen/backup directory is not ignored by git. Backups may be committed."
-                        );
-                    }
-                }
-
-                const backupPath =
-                    target.backupPath || `.axogen/backup/${target.path}`;
-                const fullSourcePath = resolve(
-                    options.baseDir || process.cwd(),
-                    target.path
-                );
-                const fullBackupPath = resolve(
-                    options.baseDir || process.cwd(),
-                    backupPath
-                );
-                try {
-                    await mkdir(dirname(fullBackupPath), {recursive: true});
-                    await copyFile(fullSourcePath, fullBackupPath);
-                    logger.info(`Backup created at: ${fullBackupPath}`);
-                } catch (error) {
-                    logger.error(
-                        `Failed to create backup for target "${targetName}": ${error instanceof Error ? error.message : String(error)}`
-                    );
-                }
-            }
+            await this.createBackup(targetName, target, options);
 
             await mkdir(dirname(path), {recursive: true});
             await writeFile(path, content, "utf-8");

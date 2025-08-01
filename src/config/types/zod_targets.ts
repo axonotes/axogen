@@ -19,6 +19,39 @@ import {
     templateTargetEngines,
 } from "./targets.ts";
 
+export const backupTargetOptionsSchema = z.object({
+    enabled: z
+        .boolean()
+        .describe("Whether to create a backup of the target file")
+        .default(true)
+        .optional(),
+    folder: z
+        .string()
+        .describe(
+            "The path to the backup folder. Defaults to '.axogen/backup/{{path}}'"
+        )
+        .default("")
+        .optional(),
+    maxBackups: z
+        .number()
+        .describe("The maximum number of backups to keep. Defaults to 5")
+        .default(5)
+        .optional(),
+    onConflict: z
+        .enum(["overwrite", "increment", "skip", "fail"])
+        .describe(
+            "What to do when a backup file already exists. Defaults to 'increment'. Mostly not used since filenames are ISO timestamped (so pretty unique)."
+        )
+        .default("increment")
+        .optional(),
+});
+export const backupTargetSchema = z
+    .union([
+        z.boolean().describe("Whether to create a backup of the target file"),
+        backupTargetOptionsSchema,
+    ])
+    .default(false);
+
 const baseTargetSchema = z.object({
     path: z.string().describe("The output path for the target"),
     schema: z
@@ -40,20 +73,7 @@ const baseTargetSchema = z.object({
         .describe("Condition to determine if the target should be generated")
         .default(true)
         .optional(),
-    backup: z
-        .boolean()
-        .describe(
-            "Whether to create a backup of the target file before writing"
-        )
-        .default(false)
-        .optional(),
-    backupPath: z
-        .string()
-        .describe(
-            "The path to store the backup file. Defaults to '.axogen/backup/{{path}}'"
-        )
-        .default("")
-        .optional(),
+    backup: backupTargetSchema.optional(),
 });
 
 export const jsonTargetSchema = baseTargetSchema.extend({
@@ -220,6 +240,9 @@ export const allTargetsSchema = z
     );
 
 // ---- Exported Types ----
+
+export type ZodBackupTargetOptions = z.infer<typeof backupTargetOptionsSchema>;
+export type ZodBackupTarget = z.infer<typeof backupTargetSchema>;
 
 export type ZodAnyTarget = z.infer<typeof anyTargetSchema>;
 export type ZodAllTargets = z.infer<typeof allTargetsSchema>;
