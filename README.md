@@ -246,6 +246,16 @@ configs.
 Found a bug? Have a feature idea? Open an issue or join the
 [Discord](https://discord.gg/myBMaaDeQu).
 
+## 📊 Star History
+
+<a href="https://www.star-history.com/#axonotes/axogen&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=axonotes/axogen&type=Date" />
+ </picture>
+</a>
+
 ## 📄 License
 
 MIT
