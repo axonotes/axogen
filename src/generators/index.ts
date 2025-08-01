@@ -126,7 +126,7 @@ export class TargetGenerator {
             );
 
             logger.info(
-                "To resolve this, add the target to your .gitignore file or remove the secrets from the target configuration."
+                `To resolve this, add the target <secondary>${target.path}</secondary> to your .gitignore file or remove the secrets from the target configuration.`
             );
 
             throw new Error(`Target "${targetName}" contains secrets`);
