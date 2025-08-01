@@ -6,7 +6,7 @@
 import {type AnyTarget, json} from "./targets.ts";
 import * as z from "zod";
 import {axogenConfigSchema, type ZodAxogenConfig} from "./zod_config.ts";
-import {zodIssuesToErrors} from "../../utils/helpers.ts";
+import {deepMerge, zodIssuesToErrors} from "../../utils/helpers.ts";
 import type {AxogenConfig} from "./config.ts";
 import {cmd} from "./commands.ts";
 import {logger} from "../../utils/console/logger.ts";
@@ -45,6 +45,73 @@ export function defineConfig<TTargets extends Record<string, AnyTarget>>(
 
         throw new Error(
             `Failed to load config: ${
+                error instanceof Error ? error.message : String(error)
+            }`
+        );
+    }
+}
+
+/**
+ * Extend an existing Axogen configuration with additional targets or commands.
+ * NOTE: This function merges the source configuration with the extension,
+ * in case of conflicts, the extension will ***OVERRIDE*** the source.
+ * @param source - The source Axogen configuration to extend
+ * @param extension - The Axogen configuration extension to merge with the source
+ */
+export function extendConfig<TTargets extends Record<string, AnyTarget>>(
+    source: ZodAxogenConfig,
+    extension: AxogenConfig<TTargets>
+) {
+    let validatedSource: ZodAxogenConfig;
+    try {
+        validatedSource = axogenConfigSchema.parse(source);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            const validationErrors = zodIssuesToErrors(error.issues);
+
+            logger.validation(
+                `Configuration validation of source failed`,
+                validationErrors
+            );
+
+            logger.logF(
+                `<primary>💡</primary> <d>Check your config file structure.</d>`
+            );
+
+            throw new Error("Configuration validation of source failed");
+        }
+
+        throw new Error(
+            `Failed to load source config: ${
+                error instanceof Error ? error.message : String(error)
+            }`
+        );
+    }
+
+    const validatedExtension = defineConfig(extension);
+    const mergedConfig = deepMerge(validatedSource, validatedExtension);
+
+    try {
+        // Check one last time if the merged config is valid
+        return axogenConfigSchema.parse(mergedConfig);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            const validationErrors = zodIssuesToErrors(error.issues);
+
+            logger.validation(
+                `Merged configuration validation failed`,
+                validationErrors
+            );
+
+            logger.logF(
+                `<primary>💡</primary> <d>Check your config file structure.</d>`
+            );
+
+            throw new Error("Merged configuration validation failed");
+        }
+
+        throw new Error(
+            `Failed to validate merged config: ${
                 error instanceof Error ? error.message : String(error)
             }`
         );

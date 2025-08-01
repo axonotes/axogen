@@ -269,3 +269,25 @@ function formatFieldPath(path: PropertyKey[]): string {
         return `${acc}.${String(segment)}`;
     }, "");
 }
+
+/**
+ * Deeply merges two objects, combining properties recursively
+ * If a property is an object in both target and source, it merges them recursively.
+ * @param target
+ * @param source
+ */
+export function deepMerge(target: any, source: any) {
+    const result = {...target};
+    for (const key in source) {
+        if (
+            source[key] &&
+            typeof source[key] === "object" &&
+            !Array.isArray(source[key])
+        ) {
+            result[key] = deepMerge(target[key] || {}, source[key]);
+        } else {
+            result[key] = source[key];
+        }
+    }
+    return result;
+}
