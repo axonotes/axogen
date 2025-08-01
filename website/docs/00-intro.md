@@ -2,26 +2,17 @@
 title: Introduction
 description:
     TypeScript-native configuration system for any project, any language
-sidebar_position: 1
+sidebar_position: 0
 ---
 
 # Introduction
 
 TypeScript-native configuration system for **any project, any language**.
 
-:::warning Early Development - v0.3.x
+:::warning Not Production Ready
 
-This is early development. The API may change as we work on improving the
-developer experience.
-
-:::
-
-:::warning Documentation Status
-
-The docs are currently not up to date as I'm focused on stabilizing core
-features. For the most current information, you might need to check the source
-code on GitHub or the examples in this blog post. Proper documentation will come
-once the API is more stable!
+This is an early preview of Axogen. It works, but expect bugs and missing
+features. Use it for fun, not for mission-critical systems. Feedback is welcome!
 
 :::
 
@@ -40,9 +31,10 @@ apps, PHP websites - doesn't matter. If your project uses config files, Axogen
 can help.
 
 ```typescript
-import {z, defineConfig, loadEnv} from "@axonotes/axogen";
+import {defineConfig, loadEnv, env, json} from "@axonotes/axogen";
+import * as z from "zod";
 
-const env = loadEnv(
+const envVars = loadEnv(
     z.object({
         DATABASE_URL: z.url(),
         PORT: z.coerce.number().default(3000),
@@ -51,25 +43,23 @@ const env = loadEnv(
 
 export default defineConfig({
     targets: {
-        app: {
+        app: env({
             path: "app/.env",
-            type: "env",
             variables: {
-                DATABASE_URL: env.DATABASE_URL,
-                PORT: env.PORT,
+                DATABASE_URL: envVars.DATABASE_URL,
+                PORT: envVars.PORT,
             },
-        },
-        config: {
+        }),
+        config: json({
             path: "config.json",
-            type: "json",
             variables: {
-                database: {url: env.DATABASE_URL},
-                server: {port: env.PORT},
+                database: {url: envVars.DATABASE_URL},
+                server: {port: envVars.PORT},
             },
-        },
+        }),
     },
     commands: {
-        start: `npm start --port ${env.PORT}`,
+        start: `npm start --port ${envVars.PORT}`,
     },
 });
 ```
@@ -89,6 +79,8 @@ axogen generate
 
 Your `app/.env` and `config.json` files are generated with validated values.
 They're always in sync because there's only one source of truth.
+
+![Axogen Generate Output](/docs/intro/axogen_gen.png)
 
 ## The Problem
 
@@ -131,9 +123,10 @@ npm install @axonotes/axogen
 
 ```typescript
 // axogen.config.ts
-import {z, defineConfig, loadEnv, command} from "@axonotes/axogen";
+import {defineConfig, loadEnv, env, cmd} from "@axonotes/axogen";
+import * as z from "zod";
 
-const env = loadEnv(
+const envVars = loadEnv(
     z.object({
         DATABASE_URL: z.url("Must be a valid database URL"),
         PORT: z.coerce.number().default(3000),
@@ -145,20 +138,19 @@ const env = loadEnv(
 
 export default defineConfig({
     targets: {
-        app: {
+        app: env({
             path: ".env",
-            type: "env",
             variables: {
-                DATABASE_URL: env.DATABASE_URL,
-                PORT: env.PORT,
+                DATABASE_URL: envVars.DATABASE_URL,
+                PORT: envVars.PORT,
             },
-        },
+        }),
     },
     commands: {
-        dev: command.define({
+        dev: cmd({
             help: "Start development server",
             exec: async () => {
-                console.log(`🚀 Starting server on port ${env.PORT}`);
+                console.log(`🚀 Starting server on port ${envVars.PORT}`);
                 // Your custom logic here
             },
         }),
@@ -179,16 +171,8 @@ axogen run dev     # Run commands with validation
 
 When validation fails, you get clear error messages:
 
-```
-❌ Environment variable validation failed
-
-  Validation Errors:
-    • DATABASE_URL: Must be a valid database URL
-    • PORT: Expected number, received string
-
-ℹ️  Check your .env.axogen file and ensure all required variables are set.
-```
+![Axogen Validation Error](/docs/intro/validation_error.png)
 
 ## What's Next?
 
-Check out the [Installation](./installation) guide to get started.
+Check out the [Installation](01-installation.md) guide to get started.

@@ -1,7 +1,7 @@
 ---
 title: FAQ
 description: Frequently Asked Questions about Axogen
-sidebar_position: 4
+sidebar_position: 99
 ---
 
 # FAQ
@@ -68,10 +68,10 @@ file, Kubernetes manifests, whatever. No need to migrate everything at once.
 ## Stability & Production Use
 
 <details>
-<summary>Is this stable enough for production? It's only v0.3.0...</summary>
+<summary>Is this stable enough for production? It's only v0.5.0...</summary>
 
-Fair question! I built the initial version in 3 days. The API will probably
-change before v1.0, but the fundamental concept is solid.
+Fair question! The API has stabilized significantly since the early days. v0.5.0
+introduces the new factory function API and many core features are now solid.
 
 That said, you're right to be cautious. The generated files are just normal
 `.env` files and such, so worst case you can stop using Axogen and keep the
@@ -109,7 +109,7 @@ Probably some breaking changes, yeah. I'm still figuring out the best APIs. But
 I'll provide migration guides and try to make upgrades as smooth as possible.
 
 For now, pin to a specific version if stability is critical:
-`npm install @axonotes/axogen@0.3.0`
+`npm install @axonotes/axogen@0.5.0`
 
 </details>
 
@@ -285,15 +285,16 @@ perfectly yet. It'll get better over time. If something breaks, file an issue!
 Absolutely! Use the `template` type:
 
 ```typescript
+import {defineConfig, template} from "@axonotes/axogen";
+
 export default defineConfig({
     targets: {
-        custom: {
+        custom: template({
             path: "my-config.xml",
-            type: "template",
             template: "my-template.xml.njk",
-            enigne: "nunjucks", // (default: "nunjucks")
+            engine: "nunjucks", // (default: "nunjucks")
             variables: env,
-        },
+        }),
     },
 });
 ```
@@ -347,7 +348,8 @@ might get unwieldy to maintain.
 
 **The key difference:** Axogen works for ANY project in ANY language. Your Go
 API, Python scripts, Docker configs, Kubernetes manifests - all from one
-TypeScript config. Plus you get type safety and a task runner for free.
+TypeScript config. Plus you get type safety, secret detection, backup system,
+and a task runner for free.
 
 Most tools are either language-specific OR format-specific. Axogen is
 language-agnostic AND multi-format.

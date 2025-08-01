@@ -82,6 +82,7 @@ const config: Config = {
                     label: "Documentation",
                 },
                 {to: "/blog", label: "Blog", position: "left"},
+                {to: "/docs/faq", label: "FAQ", position: "left"},
                 {
                     href: "https://github.com/axonotes/axogen",
                     label: "GitHub",
