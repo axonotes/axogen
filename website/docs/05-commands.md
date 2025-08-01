@@ -119,8 +119,8 @@ export default defineConfig({
 });
 ```
 
-Your function gets a context object with access to the current working
-directory, environment variables, and your full configuration.
+Your function gets a context object with everything you need - current
+directory, environment variables, and your full config.
 
 ## String Commands with Help
 

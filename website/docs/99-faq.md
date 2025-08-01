@@ -6,15 +6,6 @@ sidebar_position: 99
 
 # FAQ
 
-:::warning Documentation Status
-
-The docs are currently not up to date as I'm focused on stabilizing core
-features. For the most current information, you might need to check the source
-code on GitHub or the examples in this blog post. Proper documentation will come
-once the API is more stable!
-
-:::
-
 ## Getting Started
 
 <details>

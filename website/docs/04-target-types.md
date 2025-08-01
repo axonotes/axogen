@@ -36,8 +36,8 @@ export default defineConfig({
 });
 ```
 
-All factory functions follow the same pattern - they take a config object and
-return a target definition.
+All factory functions work the same way - give them a config object, get back a
+target definition.
 
 ## JSON Family
 

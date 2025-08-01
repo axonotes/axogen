@@ -14,7 +14,7 @@ gitignored, Axogen refuses to generate.
 
 ## How It Works
 
-Axogen's secret detection is research-based and uses multiple detection methods:
+Axogen's secret detection uses multiple approaches to catch secrets:
 
 - **Known patterns** - AWS keys, GitHub tokens, Stripe keys, JWTs, etc.
 - **Entropy analysis** - High randomness indicating machine-generated secrets
