@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+Crawl-delay: 1
 
+# Sitemaps
 Sitemap: https://axonotes.github.io/axogen/sitemap.xml
+Sitemap: https://axonotes.github.io/axogen/blog/rss.xml
