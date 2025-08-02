@@ -90,7 +90,7 @@ export function loadEnv<TSchema extends z.ZodType>(
 
             if (!finalConfig.silent) {
                 logger.validation(
-                    `Environment variable validation failed for file: <subtle>finalConfig.path</subtle>`,
+                    `Environment variable validation failed for file: <subtle>${finalConfig.path}</subtle>`,
                     validationErrors
                 );
             }
