@@ -106,6 +106,31 @@ async function typeCheck() {
 async function buildCLI() {
     logger.start("Compiling CLI with bun...");
 
+    const externalDependencies = [
+        // Node.js built-ins
+        "fs",
+        "path",
+        "os",
+        "util",
+        "events",
+        "stream",
+        "buffer",
+        "crypto",
+        // Problematic packages that cause editions-autoloader errors
+        "version-compare",
+        "editions",
+        "errlop",
+        "istextorbinary",
+        // Large dependencies that should remain external
+        "typescript",
+        "commander",
+        "chalk",
+        "ansis",
+        // All npm dependencies (alternative approach)
+        ...Object.keys(packageJson.dependencies || {}),
+        ...Object.keys(packageJson.devDependencies || {}),
+    ];
+
     const result = await build({
         entrypoints: ["src/cli.ts"],
         outdir: "bin/build",
@@ -113,6 +138,12 @@ async function buildCLI() {
         define: {
             __VERSION__: `"${version}"`,
         },
+        external: externalDependencies,
+        minify: false,
+        sourcemap: "none",
+        splitting: false,
+        format: "esm",
+        packages: "external",
     });
 
     if (result.success) {
@@ -302,10 +333,19 @@ async function createExecutable() {
     const executableContent = `#!/usr/bin/env node
 ${builtCode}`;
 
-    writeFileSync("bin/axogen", executableContent);
-    chmodSync("bin/axogen", "755");
+    // Create the main JavaScript executable
+    writeFileSync("bin/axogen.js", executableContent);
+    chmodSync("bin/axogen.js", "755");
 
-    logger.file("Executable created", "bin/axogen");
+    // Create Windows batch launcher
+    const windowsLauncher = `@echo off
+rem Windows launcher for axogen
+node "%~dp0axogen.js" %*
+`;
+    writeFileSync("bin/axogen.cmd", windowsLauncher);
+
+    logger.success("Executable created: bin/axogen.js");
+    logger.success("Windows launcher created: bin/axogen.cmd");
 }
 
 function cleanup() {
