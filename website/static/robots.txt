@@ -5,3 +5,5 @@ Crawl-delay: 1
 # Sitemaps
 Sitemap: https://axonotes.github.io/axogen/sitemap.xml
 Sitemap: https://axonotes.github.io/axogen/blog/rss.xml
+
+# Algolia-Crawler-Verif: 0A64D5A165B3414F
