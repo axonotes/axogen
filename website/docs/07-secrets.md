@@ -1,6 +1,15 @@
 ---
 title: Secret Detection
 description: Keeping your secrets safe with Axogen's built-in security
+keywords:
+    [
+        axogen secrets,
+        configuration security,
+        environment variables security,
+        sensitive data management,
+        secure config handling,
+        secrets best practices,
+    ]
 sidebar_position: 7
 ---
 

@@ -1,6 +1,15 @@
 ---
 title: File Loading
 description: Loading existing configuration files with validation
+keywords:
+    [
+        axogen file loading,
+        config file import,
+        existing config validation,
+        file format loading,
+        configuration migration,
+        type-safe file loading,
+    ]
 sidebar_position: 6
 ---
 
@@ -253,6 +262,17 @@ export default defineConfig({
         }),
     },
 });
+```
+
+## Loading TXT Files
+
+To be honest, loading plain text files is not very exciting, but you can do it:
+
+```typescript
+import {loadFile, txtSchema} from "@axonotes/axogen";
+
+const readme = loadFile("README.txt", "txt", txtSchema);
+console.log(readme.content);
 ```
 
 ## Combining with loadEnv

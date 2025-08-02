@@ -1,6 +1,16 @@
 ---
 title: Basic Configuration
 description: Core concepts and patterns in Axogen
+keywords:
+    [
+        axogen configuration,
+        defineConfig function,
+        zod type safety,
+        environment variable loading,
+        conditional config generation,
+        axogen backup system,
+        typescript config patterns,
+    ]
 sidebar_position: 3
 ---
 

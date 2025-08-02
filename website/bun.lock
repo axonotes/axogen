@@ -5,6 +5,7 @@
       "name": "website",
       "dependencies": {
         "@docusaurus/core": "3.8.1",
+        "@docusaurus/plugin-sitemap": "^3.8.1",
         "@docusaurus/preset-classic": "3.8.1",
         "@docusaurus/remark-plugin-npm2yarn": "^3.8.1",
         "@mdx-js/react": "^3.0.0",

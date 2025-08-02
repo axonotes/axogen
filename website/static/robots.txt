@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://axonotes.github.io/axogen/sitemap.xml

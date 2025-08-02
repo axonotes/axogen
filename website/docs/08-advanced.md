@@ -1,6 +1,15 @@
 ---
 title: Advanced Features
 description: Real-world patterns and practical use cases
+keywords:
+    [
+        advanced axogen,
+        complex configuration,
+        custom integrations,
+        performance optimization,
+        advanced typescript config,
+        sophisticated patterns,
+    ]
 sidebar_position: 8
 ---
 

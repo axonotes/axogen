@@ -2,6 +2,18 @@
 title: Introduction
 description:
     TypeScript-native configuration system for any project, any language
+keywords:
+    [
+        axogen introduction,
+        typescript configuration,
+        what is axogen,
+        scattered config files,
+        environment variables typescript,
+        config file chaos,
+        zod validation,
+        type-safe config,
+        configuration management,
+    ]
 sidebar_position: 0
 ---
 

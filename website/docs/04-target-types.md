@@ -1,6 +1,16 @@
 ---
 title: Target Types
 description: All the file formats Axogen can generate
+keywords:
+    [
+        axogen target types,
+        config file formats,
+        env file generation,
+        json yaml toml generation,
+        template generation,
+        custom config formats,
+        multi-format configuration,
+    ]
 sidebar_position: 4
 ---
 

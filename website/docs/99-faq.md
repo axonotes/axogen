@@ -1,6 +1,17 @@
 ---
 title: FAQ
 description: Frequently Asked Questions about Axogen
+keywords:
+    [
+        axogen faq,
+        axogen questions,
+        troubleshooting axogen,
+        production readiness,
+        team adoption,
+        axogen vs dotenv,
+        configuration tool comparison,
+        axogen support,
+    ]
 sidebar_position: 99
 ---
 

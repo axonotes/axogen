@@ -1,6 +1,15 @@
 ---
 title: Installation
 description: How to install and set up Axogen v0.5.0
+keywords:
+    [
+        install axogen,
+        npm install axogen,
+        typescript configuration setup,
+        node.js configuration tool,
+        bun installation,
+        axogen setup guide,
+    ]
 sidebar_position: 1
 ---
 

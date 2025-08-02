@@ -1,6 +1,17 @@
 ---
 title: Commands System
 description: Task automation and command management with Axogen
+keywords:
+    [
+        axogen commands,
+        task automation,
+        smart commands,
+        command validation,
+        console themes,
+        typescript cli,
+        intelligent commands,
+        task management,
+    ]
 sidebar_position: 5
 ---
 

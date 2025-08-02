@@ -1,6 +1,16 @@
 ---
 title: Getting Started
 description: Your first Axogen configuration - no fluff, just results
+keywords:
+    [
+        axogen getting started,
+        typescript config tutorial,
+        environment variables validation,
+        config file generation,
+        multiple output formats,
+        axogen commands,
+        zod schema validation,
+    ]
 sidebar_position: 2
 ---
 

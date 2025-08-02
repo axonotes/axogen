@@ -29,6 +29,77 @@ const config: Config = {
         locales: ["en"],
     },
 
+    headTags: [
+        {
+            tagName: "script",
+            attributes: {
+                type: "application/ld+json",
+            },
+            innerHTML: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                name: "Axogen",
+                description:
+                    "TypeScript-native configuration system that unifies typed environment variables, code generation, and task management for any project",
+                applicationCategory: "DeveloperApplication",
+                operatingSystem: "Linux, macOS, Windows",
+                softwareVersion: "0.5.1",
+                datePublished: "2025-08-02",
+                author: {
+                    "@type": "Person",
+                    name: "Oliver Seifert",
+                    url: "https://github.com/imgajeed76",
+                },
+                publisher: {
+                    "@type": "Organization",
+                    name: "Axonotes",
+                    url: "https://github.com/axonotes",
+                },
+                downloadUrl: "https://www.npmjs.com/package/@axonotes/axogen",
+                installUrl:
+                    "https://axonotes.github.io/axogen/docs/installation",
+                codeRepository: "https://github.com/axonotes/axogen",
+                programmingLanguage: "TypeScript",
+                runtimePlatform: "Node.js",
+                offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "USD",
+                    availability: "https://schema.org/InStock",
+                },
+                keywords:
+                    "typescript, configuration, environment variables, config management, zod validation, developer tools",
+                screenshot: "https://axonotes.github.io/axogen/img/social.png",
+            }),
+        },
+        {
+            tagName: "script",
+            attributes: {
+                type: "application/ld+json",
+            },
+            innerHTML: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "Axonotes",
+                url: "https://axonotes.github.io/axogen/",
+                logo: "https://axonotes.github.io/axogen/img/favicon.svg",
+                sameAs: [
+                    "https://github.com/axonotes",
+                    "https://x.com/axonotes",
+                    "https://www.npmjs.com/package/@axonotes/axogen",
+                ],
+            }),
+        },
+        // Canonical URL
+        {
+            tagName: "link",
+            attributes: {
+                rel: "canonical",
+                href: "https://axonotes.github.io/axogen/",
+            },
+        },
+    ],
+
     scripts: [
         {
             defer: true,
@@ -44,19 +115,26 @@ const config: Config = {
                 docs: {
                     sidebarPath: "./sidebars.ts",
                     editUrl:
-                        "https://github.com/axonotes/axogen/tree/main/website/",
+                        "https://github.com/axonotes/axogen/tree/main/website/docs",
                     remarkPlugins: [
                         [
                             require("@docusaurus/remark-plugin-npm2yarn"),
                             {sync: true},
                         ],
                     ],
+                    showLastUpdateTime: true,
+                    showLastUpdateAuthor: true,
                 },
                 blog: {
                     showReadingTime: true,
                     feedOptions: {
                         type: ["rss", "atom"],
                         xslt: true,
+                        title: "Axogen Blog",
+                        description:
+                            "Latest updates and insights about TypeScript configuration management",
+                        copyright: `Copyright © ${new Date().getFullYear()} Axonotes.`,
+                        language: "en",
                     },
                     onInlineTags: "warn",
                     onInlineAuthors: "warn",
@@ -67,19 +145,75 @@ const config: Config = {
                             {sync: true},
                         ],
                     ],
+                    blogTitle: "Axogen Blog",
+                    blogDescription:
+                        "Learn about TypeScript configuration management, developer tools, and best practices",
                 },
                 theme: {
                     customCss: "./src/css/custom.css",
+                },
+                sitemap: {
+                    lastmod: "date",
+                    changefreq: "weekly",
+                    priority: 0.5,
+                    ignorePatterns: ["/tags/**"],
+                    filename: "sitemap.xml",
                 },
             } satisfies Preset.Options,
         ],
     ],
 
     themeConfig: {
+        metadata: [
+            {
+                name: "keywords",
+                content:
+                    "typescript configuration, environment variables, config management, dotenv alternative, zod validation, typescript env, config sync, developer tools, build tools, typescript config system",
+            },
+            {
+                name: "description",
+                content:
+                    "Stop hunting through config files. Axogen is a TypeScript-native configuration system that eliminates config chaos with type-safe environment variables and automatic generation.",
+            },
+            {property: "og:type", content: "website"},
+            {
+                property: "og:title",
+                content:
+                    "Axogen - TypeScript Configuration System | Stop Config File Chaos",
+            },
+            {
+                property: "og:description",
+                content:
+                    "Define once in TypeScript, generate everywhere. Type-safe environment variables with Zod validation for any project.",
+            },
+            {
+                property: "og:image",
+                content: "https://axonotes.github.io/axogen/img/social.png",
+            },
+            {property: "og:url", content: "https://axonotes.github.io/axogen/"},
+            {name: "twitter:card", content: "summary_large_image"},
+            {
+                name: "twitter:title",
+                content: "Axogen - TypeScript Configuration System",
+            },
+            {
+                name: "twitter:description",
+                content:
+                    "Stop hunting through config files. Define once in TypeScript, generate everywhere with type-safe validation.",
+            },
+            {
+                name: "twitter:image",
+                content: "https://axonotes.github.io/axogen/img/social.png",
+            },
+            {name: "twitter:creator", content: "@axonotes"},
+            {name: "author", content: "Oliver Seifert"},
+            {name: "robots", content: "index, follow"},
+            {name: "googlebot", content: "index, follow"},
+        ],
         navbar: {
             title: "Axogen",
             logo: {
-                alt: "Axogen Logo",
+                alt: "Axogen - TypeScript Configuration System Logo",
                 src: "img/favicon.svg",
             },
             items: [
@@ -110,8 +244,16 @@ const config: Config = {
                     title: "Docs",
                     items: [
                         {
-                            label: "Tutorial",
+                            label: "Getting Started",
                             to: "/docs/intro",
+                        },
+                        {
+                            label: "Installation",
+                            to: "/docs/installation",
+                        },
+                        {
+                            label: "Configuration",
+                            to: "/docs/basic-configuration",
                         },
                     ],
                 },
@@ -123,7 +265,7 @@ const config: Config = {
                             href: "https://discord.gg/myBMaaDeQu",
                         },
                         {
-                            label: "X",
+                            label: "X (Twitter)",
                             href: "https://x.com/axonotes",
                         },
                     ],
@@ -139,11 +281,20 @@ const config: Config = {
                             label: "GitHub",
                             href: "https://github.com/axonotes/axogen",
                         },
+                        {
+                            label: "NPM Package",
+                            href: "https://www.npmjs.com/package/@axonotes/axogen",
+                        },
+                        {
+                            label: "Sponsor",
+                            href: "https://github.com/sponsors/imgajeed76",
+                        },
                     ],
                 },
             ],
             copyright: `Copyright © ${new Date().getFullYear()} Axonotes. Built with Docusaurus.`,
         },
+        image: "img/social.png",
         prism: {
             theme: prismThemes.github,
             darkTheme: prismThemes.dracula,
