@@ -577,7 +577,7 @@ body[data-page="homepage"] .navbar {
 }
 
 /* High contrast mode support */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
     .button,
     .card,
     .admonition {
