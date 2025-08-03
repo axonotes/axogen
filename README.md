@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://axonotes.github.io/axogen/">📖 Documentation</a> |
-  <a href="https://axonotes.github.io/axogen/getting-started/">🚀 Quick Start</a> |
+  <a href="https://axonotes.github.io/axogen/docs/getting-started/">🚀 Quick Start</a> |
   <a href="https://discord.gg/myBMaaDeQu">💬 Discord</a>
 </p>
 
