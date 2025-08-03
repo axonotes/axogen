@@ -1,30 +1,344 @@
-/**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
- */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
-/* You can override the default Infima variables here. */
+/* ================================
+   CSS CUSTOM PROPERTIES
+   ================================ */
+
 :root {
-    --ifm-color-primary: oklch(58.3% 0.15 266.63);
-    --ifm-color-primary-dark: oklch(51.06% 0.12 266.36);
-    --ifm-color-primary-darker: oklch(43.79% 0.09 265.52);
-    --ifm-color-primary-darkest: oklch(36.01% 0.06 263.99);
-    --ifm-color-primary-light: oklch(65.28% 0.17 266.52);
-    --ifm-color-primary-lighter: oklch(71.04% 0.14 267.78);
-    --ifm-color-primary-lightest: oklch(77.26% 0.11 268.36);
+    /* Primary colors */
+    --ifm-color-primary: #5275d3;
+    --ifm-color-primary-dark: #4662ab;
+    --ifm-color-primary-darker: #3a5084;
+    --ifm-color-primary-darkest: #2d3c5d;
+    --ifm-color-primary-light: #6089f7;
+    --ifm-color-primary-lighter: #7c9df9;
+    --ifm-color-primary-lightest: #97b2fc;
+
+    /* Typography */
+    --ifm-font-family-base:
+        "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, sans-serif;
+    --ifm-font-family-monospace:
+        "JetBrains Mono", "Fira Code", "Monaco", Consolas, "Liberation Mono",
+        "Courier New", monospace;
     --ifm-code-font-size: 95%;
+
+    /* Layout */
+    --ifm-spacing-horizontal: 1.5rem;
+    --ifm-navbar-height: 4rem;
+    --ifm-global-radius: 8px;
+    --ifm-button-border-radius: 6px;
+
+    /* Shadows */
+    --ifm-global-shadow-lw:
+        0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --ifm-global-shadow-md:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --ifm-global-shadow-tl:
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* Code highlighting */
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+    /* Emphasis colors (slate scale) */
+    --ifm-color-emphasis-0: #f8fafc;
+    --ifm-color-emphasis-100: #f1f5f9;
+    --ifm-color-emphasis-200: #e2e8f0;
+    --ifm-color-emphasis-300: #cbd5e1;
+    --ifm-color-emphasis-400: #94a3b8;
+    --ifm-color-emphasis-500: #64748b;
+    --ifm-color-emphasis-600: #475569;
+    --ifm-color-emphasis-700: #334155;
+    --ifm-color-emphasis-800: #1e293b;
+    --ifm-color-emphasis-900: #0f172a;
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme="dark"] {
-    --ifm-color-primary: oklch(71.04% 0.14 267.78);
-    --ifm-color-primary-dark: oklch(58.3% 0.15 266.63);
-    --ifm-color-primary-darker: oklch(51.06% 0.12 266.36);
-    --ifm-color-primary-darkest: oklch(43.79% 0.09 265.52);
-    --ifm-color-primary-light: oklch(77.26% 0.11 268.36);
-    --ifm-color-primary-lighter: oklch(83.49% 0.075 270.02);
-    --ifm-color-primary-lightest: oklch(89.92% 0.045 270.04);
+    --ifm-color-primary: #7c9df9;
+    --ifm-color-primary-dark: #5275d3;
+    --ifm-color-primary-darker: #4662ab;
+    --ifm-color-primary-darkest: #3a5084;
+    --ifm-color-primary-light: #97b2fc;
+    --ifm-color-primary-lighter: #b6c7fb;
+    --ifm-color-primary-lightest: #d2ddfd;
+
+    /* Dark mode shadows */
+    --ifm-global-shadow-lw:
+        0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --ifm-global-shadow-md:
+        0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --ifm-global-shadow-tl:
+        0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+    /* Dark mode emphasis colors (inverted) */
+    --ifm-color-emphasis-0: #0f172a;
+    --ifm-color-emphasis-100: #1e293b;
+    --ifm-color-emphasis-200: #334155;
+    --ifm-color-emphasis-300: #475569;
+    --ifm-color-emphasis-400: #64748b;
+    --ifm-color-emphasis-500: #94a3b8;
+    --ifm-color-emphasis-600: #cbd5e1;
+    --ifm-color-emphasis-700: #e2e8f0;
+    --ifm-color-emphasis-800: #f1f5f9;
+    --ifm-color-emphasis-900: #f8fafc;
+}
+
+/* ================================
+   GLOBAL STYLES
+   ================================ */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-feature-settings:
+        "kern" 1,
+        "liga" 1,
+        "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================================
+   NAVBAR
+   ================================ */
+
+.navbar {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: var(--ifm-global-shadow-lw);
+}
+
+.navbar__title {
+    font-weight: 700;
+}
+
+/* Homepage transparent navbar */
+body[data-page="homepage"] .navbar {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+[data-theme="dark"] .navbar {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] body[data-page="homepage"] .navbar {
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ================================
+   BUTTONS
+   ================================ */
+
+.button {
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--ifm-button-border-radius);
+}
+
+.button:hover {
+    transform: translateY(-1px);
+}
+
+.button--primary {
+    background: linear-gradient(
+        135deg,
+        var(--ifm-color-primary) 0%,
+        var(--ifm-color-primary-dark) 100%
+    );
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.button--primary:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.button--secondary {
+    border: 2px solid var(--ifm-color-primary);
+    background: transparent;
+    color: var(--ifm-color-primary);
+}
+
+.button--secondary:hover {
+    background: var(--ifm-color-primary);
+    color: white;
+}
+
+/* ================================
+   CODE BLOCKS
+   ================================ */
+
+.prism-code {
+    border-radius: 12px;
+    box-shadow: var(--ifm-global-shadow-md);
+}
+
+.token.title.class-name {
+    color: #60a5fa;
+}
+.token.function {
+    color: #a78bfa;
+}
+.token.string {
+    color: #10b981;
+}
+.token.keyword {
+    color: #f472b6;
+}
+
+/* ================================
+   CARDS
+   ================================ */
+
+.card {
+    border-radius: 16px;
+    border: 1px solid var(--ifm-color-emphasis-200);
+    box-shadow: var(--ifm-global-shadow-lw);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+[data-theme="dark"] .card {
+    border: 1px solid var(--ifm-color-emphasis-200);
+    background: var(--ifm-color-emphasis-100);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ifm-global-shadow-md);
+}
+
+/* ================================
+   TABLE OF CONTENTS
+   ================================ */
+
+.table-of-contents {
+    border-left: 2px solid var(--ifm-color-emphasis-200);
+}
+
+.table-of-contents__link {
+    color: var(--ifm-color-emphasis-700);
+    transition: color 0.2s ease;
+}
+
+.table-of-contents__link:hover {
+    color: var(--ifm-color-primary);
+}
+
+.table-of-contents__link--active {
+    color: var(--ifm-color-primary);
+    font-weight: 600;
+}
+
+/* ================================
+   PAGINATION
+   ================================ */
+
+.pagination-nav__link {
+    border-radius: 12px;
+    border: 1px solid var(--ifm-color-emphasis-200);
+    transition: all 0.2s ease;
+}
+
+.pagination-nav__link:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ifm-global-shadow-md);
+}
+
+/* ================================
+   ADMONITIONS
+   ================================ */
+
+.admonition {
+    border-radius: 12px;
+    border-left-width: 4px;
+    box-shadow: var(--ifm-global-shadow-lw);
+}
+
+/* ================================
+   SCROLLBAR
+   ================================ */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--ifm-color-emphasis-100);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--ifm-color-emphasis-300);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ifm-color-emphasis-400);
+}
+
+/* ================================
+   SEARCH
+   ================================ */
+
+.navbar__search-input {
+    border-radius: 8px;
+    border: 1px solid var(--ifm-color-emphasis-200);
+    transition: all 0.2s ease;
+}
+
+.navbar__search-input:focus {
+    border-color: var(--ifm-color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* ================================
+   ACCESSIBILITY
+   ================================ */
+
+.button:focus,
+.navbar__link:focus {
+    outline: 2px solid var(--ifm-color-primary);
+    outline-offset: 2px;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+
+@media screen and (max-width: 996px) {
+    .navbar {
+        padding: 0 1rem;
+    }
+
+    .navbar__toggle {
+        border-radius: 6px;
+    }
+}
+
+/* ================================
+   PRINT STYLES
+   ================================ */
+
+@media print {
+    .navbar,
+    .footer,
+    .pagination-nav,
+    .table-of-contents,
+    .theme-doc-sidebar-container {
+        display: none !important;
+    }
 }
