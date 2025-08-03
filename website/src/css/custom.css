@@ -180,38 +180,9 @@ body[data-page="homepage"] .navbar {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Mobile navbar */
-.navbar__toggle {
-    border-radius: 6px;
-    padding: 0.5rem;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 .navbar-sidebar {
-    backdrop-filter: blur(20px);
     z-index: 1001 !important;
     height: 100vh !important;
-    background: rgba(255, 255, 255, 0.95);
-}
-
-[data-theme="dark"] .navbar-sidebar {
-    background: rgba(15, 23, 42, 0.95);
-}
-
-.navbar-sidebar__item {
-    padding: 0.5rem 0;
-}
-
-.navbar-sidebar__link {
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    margin: 0 1rem;
-    font-size: 1rem;
-    font-weight: 500;
 }
 
 /* ================================
