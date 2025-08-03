@@ -2,7 +2,6 @@ import type {ReactNode} from "react";
 import {useEffect} from "react";
 import clsx from "clsx";
 import Link from "@docusaurus/Link";
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
 import Heading from "@theme/Heading";
 import Head from "@docusaurus/Head";
@@ -93,8 +92,6 @@ export default defineConfig({
 });`;
 
 function HomepageHeader() {
-    const {siteConfig} = useDocusaurusContext();
-
     useEffect(() => {
         document.body.setAttribute("data-page", "homepage");
         return () => {
@@ -110,9 +107,8 @@ function HomepageHeader() {
                 <div className={styles.heroContent}>
                     <div className={styles.heroText}>
                         <Heading as="h1" className={styles.heroTitle}>
-                            Stop Hunting Through
+                            Stop Hunting Through{" "}
                             <span className={styles.heroTitleGradient}>
-                                {" "}
                                 Config Files
                             </span>
                         </Heading>
@@ -158,9 +154,6 @@ function HomepageHeader() {
                                         className={styles.terminalButton}
                                     ></span>
                                 </div>
-                                <span className={styles.terminalTitle}>
-                                    terminal
-                                </span>
                             </div>
                             <div className={styles.terminalContent}>
                                 <div className={styles.terminalLine}>
@@ -325,7 +318,7 @@ function HomepageCodeExample() {
 export default function Home(): ReactNode {
     return (
         <Layout
-            title="TypeScript Configuration System | Better than dotenv"
+            title="TypeScript Configuration System"
             description="Stop hunting through config files. Axogen is a TypeScript-native configuration system that eliminates config chaos with type-safe environment variables, Zod validation, and automatic generation."
         >
             <Head>
@@ -335,7 +328,7 @@ export default function Home(): ReactNode {
                 />
                 <meta
                     property="og:title"
-                    content="Axogen - TypeScript Configuration System | Better than dotenv"
+                    content="Axogen - TypeScript Configuration System"
                 />
                 <meta
                     property="og:description"
@@ -347,7 +340,7 @@ export default function Home(): ReactNode {
                 />
                 <meta
                     name="twitter:title"
-                    content="Axogen - TypeScript Configuration System | Better than dotenv"
+                    content="Axogen - TypeScript Configuration System"
                 />
                 <meta
                     name="twitter:description"

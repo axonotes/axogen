@@ -83,6 +83,11 @@
     align-items: center;
     overflow: hidden;
     background: linear-gradient(135deg, #5275d3 0%, #4662ab 50%, #3a5084 100%);
+    padding: clamp(2rem, 5vw, 4rem) 0;
+}
+
+body[data-page="homepage"] .heroBanner {
+    padding-top: calc(var(--ifm-navbar-height) + clamp(2rem, 5vw, 4rem));
 }
 
 [data-theme="dark"] .heroBanner {
@@ -126,18 +131,22 @@
             transparent 1px
         );
     background-size:
-        60px 60px,
-        40px 40px;
+        clamp(40px, 8vw, 60px) clamp(40px, 8vw, 60px),
+        clamp(30px, 6vw, 40px) clamp(30px, 6vw, 40px);
     animation: patternFloat 8s ease-in-out infinite;
 }
 
 .heroContent {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 4rem;
+    gap: clamp(2rem, 5vw, 4rem);
     align-items: center;
     position: relative;
     z-index: 2;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 4vw, 2rem);
 }
 
 .heroText {
@@ -145,11 +154,13 @@
 }
 
 .heroTitle {
-    font-size: 3.5rem;
+    font-size: clamp(2rem, 6vw, 3.5rem);
     font-weight: 800;
     line-height: 1.1;
-    margin-bottom: 1.5rem;
+    margin-bottom: clamp(1rem, 3vw, 1.5rem);
     color: white;
+    word-wrap: break-word;
+    hyphens: auto;
 }
 
 .heroTitleGradient {
@@ -158,6 +169,7 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: shimmer 2s ease-in-out infinite alternate;
+    display: inline-block;
 }
 
 [data-theme="dark"] .heroTitleGradient {
@@ -168,17 +180,19 @@
 }
 
 .heroSubtitle {
-    font-size: 1.25rem;
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
     line-height: 1.6;
-    margin-bottom: 2rem;
+    margin-bottom: clamp(1.5rem, 4vw, 2rem);
     opacity: 0.9;
     font-weight: 400;
+    max-width: 90%;
 }
 
 .heroButtons {
     display: flex;
-    gap: 1rem;
+    gap: clamp(0.75rem, 2vw, 1rem);
     flex-wrap: wrap;
+    align-items: center;
 }
 
 /* ================================
@@ -189,17 +203,21 @@
     background: linear-gradient(135deg, #6089f7 0%, #5275d3 100%);
     border: none;
     color: white;
-    padding: 0.875rem 2rem;
+    padding: clamp(0.75rem, 2vw, 0.875rem) clamp(1.5rem, 4vw, 2rem);
     border-radius: 12px;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: clamp(1rem, 2.2vw, 1.1rem);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 14px 0 rgba(82, 117, 211, 0.4);
     position: relative;
     overflow: hidden;
+    min-height: 44px; /* Touch target size */
+    text-decoration: none;
+    white-space: nowrap;
 }
 
 .primaryButton::before {
@@ -233,15 +251,19 @@
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
-    padding: 0.875rem 2rem;
+    padding: clamp(0.75rem, 2vw, 0.875rem) clamp(1.5rem, 4vw, 2rem);
     border-radius: 12px;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: clamp(1rem, 2.2vw, 1.1rem);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     backdrop-filter: blur(10px);
+    min-height: 44px; /* Touch target size */
+    text-decoration: none;
+    white-space: nowrap;
 }
 
 .secondaryButton:hover {
@@ -257,6 +279,7 @@
 
 .heroDemo {
     position: relative;
+    width: 100%;
 }
 
 .terminalWindow {
@@ -267,12 +290,14 @@
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     animation: terminalGlow 2s ease-in-out infinite alternate;
+    width: 100%;
+    max-width: 100%;
 }
 
 .terminalHeader {
     display: flex;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
     background: rgba(255, 255, 255, 0.05);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -283,8 +308,8 @@
 }
 
 .terminalButton {
-    width: 12px;
-    height: 12px;
+    width: clamp(10px, 2vw, 12px);
+    height: clamp(10px, 2vw, 12px);
     border-radius: 50%;
     background: #ff5f56;
 }
@@ -296,32 +321,33 @@
     background: #27ca3f;
 }
 
-.terminalTitle {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.875rem;
-    margin: 0 auto;
-}
-
 .terminalContent {
-    padding: 1.5rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
     font-family: "JetBrains Mono", "Fira Code", "Monaco", monospace;
-    font-size: 0.9rem;
+    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    overflow-x: auto;
+    text-align: left;
 }
 
 .terminalLine {
     display: flex;
     margin-bottom: 0.5rem;
     animation: typewriter 0.5s ease-out;
+    white-space: nowrap;
+    text-align: left;
+    justify-content: flex-start;
 }
 
 .prompt {
     color: #6089f7;
     margin-right: 0.5rem;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
 .command {
     color: #e5e7eb;
+    min-width: 0;
 }
 
 /* Terminal output animations */
@@ -348,6 +374,7 @@
 .arrow {
     color: #007fd4;
     margin-right: 0.5rem;
+    flex-shrink: 0;
 }
 
 .generatingText {
@@ -380,6 +407,7 @@
 .plus {
     color: #007fd4;
     margin-right: 0.5rem;
+    flex-shrink: 0;
 }
 
 .generated {
@@ -409,10 +437,10 @@
 
 .statsSection {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-    margin-top: 4rem;
-    padding: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+    margin-top: clamp(2rem, 5vw, 4rem);
+    padding: clamp(1.5rem, 4vw, 2rem);
     background: rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     backdrop-filter: blur(10px);
@@ -422,10 +450,11 @@
 .stat {
     text-align: center;
     color: white;
+    padding: clamp(0.5rem, 2vw, 1rem);
 }
 
 .statNumber {
-    font-size: 2.5rem;
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
     font-weight: 800;
     margin-bottom: 0.5rem;
     color: white;
@@ -441,10 +470,11 @@
 }
 
 .statLabel {
-    font-size: 0.875rem;
+    font-size: clamp(0.75rem, 2vw, 0.875rem);
     opacity: 0.8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    line-height: 1.4;
 }
 
 /* ================================
@@ -452,7 +482,7 @@
    ================================ */
 
 .featuresSection {
-    padding: 6rem 0;
+    padding: clamp(4rem, 8vw, 6rem) clamp(1rem, 4vw, 2rem);
     background: linear-gradient(to bottom, #f8fafc 0%, #e2e8f0 100%);
 }
 
@@ -463,14 +493,15 @@
 .sectionHeader {
     text-align: center;
     max-width: 800px;
-    margin: 0 auto 4rem;
+    margin: 0 auto clamp(3rem, 6vw, 4rem);
 }
 
 .sectionTitle {
-    font-size: 2.5rem;
+    font-size: clamp(1.875rem, 5vw, 2.5rem);
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: clamp(0.75rem, 2vw, 1rem);
     color: #1e293b;
+    line-height: 1.2;
 }
 
 [data-theme="dark"] .sectionTitle {
@@ -478,7 +509,7 @@
 }
 
 .sectionSubtitle {
-    font-size: 1.125rem;
+    font-size: clamp(1rem, 2.5vw, 1.125rem);
     color: #64748b;
     line-height: 1.6;
 }
@@ -489,13 +520,21 @@
 
 .featuresGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+    gap: clamp(1.5rem, 4vw, 2rem);
+    max-width: 100%;
+}
+
+/* Limit to max 3 columns on large screens */
+@media screen and (min-width: 1200px) {
+    .featuresGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .featureCard {
     background: white;
-    padding: 2rem;
+    padding: clamp(1.5rem, 4vw, 2rem);
     border-radius: 20px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -503,6 +542,9 @@
     position: relative;
     overflow: hidden;
     will-change: transform;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 [data-theme="dark"] .featureCard {
@@ -541,16 +583,17 @@
 }
 
 .featureIcon {
-    width: 64px;
-    height: 64px;
+    width: clamp(48px, 12vw, 64px);
+    height: clamp(48px, 12vw, 64px);
     border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: clamp(1rem, 3vw, 1.5rem);
     background: linear-gradient(135deg, #5275d3 0%, #6089f7 100%);
     color: white;
     position: relative;
+    flex-shrink: 0;
 }
 
 .featureIcon::after {
@@ -569,10 +612,11 @@
 }
 
 .featureTitle {
-    font-size: 1.25rem;
+    font-size: clamp(1.125rem, 2.5vw, 1.25rem);
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: clamp(0.75rem, 2vw, 1rem);
     color: #1e293b;
+    line-height: 1.3;
 }
 
 [data-theme="dark"] .featureTitle {
@@ -583,6 +627,8 @@
     color: #64748b;
     line-height: 1.6;
     margin: 0;
+    font-size: clamp(0.875rem, 2vw, 1rem);
+    flex-grow: 1;
 }
 
 [data-theme="dark"] .featureDescription {
@@ -594,7 +640,7 @@
    ================================ */
 
 .codeSection {
-    padding: 6rem 0;
+    padding: clamp(4rem, 8vw, 6rem) clamp(1rem, 4vw, 2rem);
     background: linear-gradient(135deg, #5275d3 0%, #3a5084 100%);
     position: relative;
     overflow: hidden;
@@ -614,10 +660,12 @@
 .codeContent {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 4rem;
+    gap: clamp(2rem, 6vw, 4rem);
     align-items: center;
     position: relative;
     z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .codeText {
@@ -625,37 +673,40 @@
 }
 
 .codeTitle {
-    font-size: 2.5rem;
+    font-size: clamp(1.875rem, 5vw, 2.5rem);
     font-weight: 700;
-    margin-bottom: 1.5rem;
+    margin-bottom: clamp(1rem, 3vw, 1.5rem);
     color: white;
+    line-height: 1.2;
 }
 
 .codeDescription {
-    font-size: 1.125rem;
+    font-size: clamp(1rem, 2.5vw, 1.125rem);
     line-height: 1.6;
-    margin-bottom: 2rem;
+    margin-bottom: clamp(1.5rem, 3vw, 2rem);
     opacity: 0.9;
 }
 
 .codeFeatures {
-    margin-bottom: 2rem;
+    margin-bottom: clamp(1.5rem, 3vw, 2rem);
 }
 
 .codeFeature {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 0.75rem;
-    font-size: 1rem;
+    font-size: clamp(0.875rem, 2vw, 1rem);
     opacity: 0.9;
     position: relative;
     padding-left: 1.5rem;
+    line-height: 1.5;
 }
 
 .codeFeature::before {
     content: "→";
     position: absolute;
     left: 0;
+    top: 0;
     color: #6089f7;
     font-weight: bold;
 }
@@ -664,12 +715,19 @@
     background: white;
     color: #5275d3;
     border: 2px solid white;
-    padding: 0.875rem 2rem;
+    padding: clamp(0.75rem, 2vw, 0.875rem) clamp(1.5rem, 4vw, 2rem);
     border-radius: 12px;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: clamp(1rem, 2.2vw, 1.1rem);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+    display: inline-block;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 .ctaButton:hover {
@@ -697,94 +755,181 @@
 
 .codeBlock {
     position: relative;
+    width: 100%;
 }
 
 .codeBlockContent {
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 /* ================================
    RESPONSIVE DESIGN
    ================================ */
 
+/* Large screens */
+@media screen and (min-width: 1400px) {
+    .heroContent,
+    .codeContent {
+        max-width: 1400px;
+    }
+}
+
+/* Tablets and small laptops */
+@media screen and (max-width: 1024px) {
+    .heroBanner {
+        min-height: 90vh;
+    }
+
+    .heroContent {
+        gap: 3rem;
+    }
+
+    .terminalContent {
+        font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+    }
+
+    .codeContent {
+        text-align: left !important;
+    }
+
+    .codeText {
+        text-align: left !important;
+    }
+
+    .codeBlock,
+    .codeBlockContent,
+    .codeBlockContent *,
+    .codeBlockContent pre,
+    .codeBlockContent code {
+        text-align: left !important;
+    }
+}
+
+/* Tablet portrait */
 @media screen and (max-width: 996px) {
     .heroBanner {
         min-height: auto;
-        padding: 4rem 0;
+        padding: clamp(3rem, 6vw, 5rem) 0;
     }
 
     .heroContent {
         grid-template-columns: 1fr;
-        gap: 3rem;
+        gap: clamp(2rem, 5vw, 3rem);
         text-align: center;
     }
 
     .heroTitle {
-        font-size: 2.5rem;
+        font-size: clamp(1.875rem, 6vw, 2.75rem);
     }
 
     .heroSubtitle {
-        font-size: 1.125rem;
+        font-size: clamp(1rem, 2.5vw, 1.125rem);
+        max-width: 100%;
     }
 
     .heroButtons {
         justify-content: center;
+        gap: 1rem;
     }
 
     .statsSection {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         gap: 1.5rem;
-        margin-top: 3rem;
+        margin-top: 2.5rem;
     }
 
-    .sectionTitle {
-        font-size: 2rem;
+    .codeContent {
+        grid-template-columns: 1fr;
+        gap: clamp(2.5rem, 5vw, 3rem);
+        text-align: center;
+    }
+}
+
+/* Mobile landscape */
+@media screen and (max-width: 768px) {
+    .heroBanner {
+        padding: clamp(2.5rem, 5vw, 4rem) 0;
+    }
+
+    body[data-page="homepage"] .heroBanner {
+        padding-top: calc(var(--ifm-navbar-height) + 2rem);
+        min-height: auto;
+    }
+
+    .heroTitle {
+        font-size: clamp(1.75rem, 5.5vw, 2.25rem);
+        margin-bottom: 1rem;
+    }
+
+    .heroSubtitle {
+        font-size: clamp(0.9rem, 2.2vw, 1rem);
+        margin-bottom: 1.5rem;
+    }
+
+    .heroButtons {
+        flex-direction: column;
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+
+    .primaryButton,
+    .secondaryButton {
+        width: 100%;
+        justify-content: center;
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .terminalWindow {
+        margin: 0;
+        border-radius: 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .terminalContent {
+        padding: 1rem;
+        font-size: 0.75rem;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        text-align: left !important;
+    }
+
+    .terminalContent::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .terminalContent::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .terminalContent::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+    }
+
+    .terminalLine,
+    .validationLine,
+    .generatingLine,
+    .resultsText,
+    .successLine,
+    .completeLine {
+        text-align: left !important;
+        justify-content: flex-start !important;
+    }
+
+    .statNumber {
+        font-size: clamp(1.5rem, 4vw, 2rem);
     }
 
     .featuresGrid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
-    }
-
-    .codeContent {
-        grid-template-columns: 1fr;
-        gap: 3rem;
-        text-align: center;
-    }
-
-    .codeTitle {
-        font-size: 2rem;
-    }
-}
-
-@media screen and (max-width: 768px) {
-    .heroBanner {
-        padding: 3rem 0;
-    }
-
-    .heroTitle {
-        font-size: 2rem;
-    }
-
-    .heroSubtitle {
-        font-size: 1rem;
-    }
-
-    .primaryButton,
-    .secondaryButton {
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-    }
-
-    .terminalContent {
-        padding: 1rem;
-        font-size: 0.8rem;
-    }
-
-    .statNumber {
-        font-size: 2rem;
     }
 
     .featureCard {
@@ -797,46 +942,279 @@
     }
 
     .codeTitle {
-        font-size: 1.75rem;
+        font-size: clamp(1.625rem, 4.5vw, 2rem);
     }
 
     .codeDescription {
-        font-size: 1rem;
+        font-size: clamp(0.9rem, 2.2vw, 1rem);
+    }
+
+    .codeContent {
+        grid-template-columns: 1fr;
+        gap: clamp(2.5rem, 5vw, 3rem);
+        text-align: left !important;
+        padding: 0 1rem;
+    }
+
+    .codeText {
+        text-align: left !important;
+    }
+
+    .codeBlock {
+        margin: 0;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .codeBlockContent {
+        border-radius: 12px;
+        text-align: left !important;
+        overflow-x: auto;
+    }
+
+    .codeBlockContent * {
+        text-align: left !important;
     }
 }
 
+/* Mobile portrait */
 @media screen and (max-width: 480px) {
+    .heroBanner {
+        padding: 2rem 0;
+    }
+
+    .heroContent {
+        padding: 0 1rem;
+    }
+
     .heroTitle {
-        font-size: 1.75rem;
+        font-size: clamp(1.5rem, 5vw, 1.875rem);
+        line-height: 1.2;
+    }
+
+    .heroSubtitle {
+        font-size: clamp(0.875rem, 2vw, 0.95rem);
     }
 
     .heroButtons {
-        flex-direction: column;
-        align-items: center;
+        max-width: 280px;
+        gap: 0.75rem;
     }
 
     .primaryButton,
     .secondaryButton {
-        width: 100%;
-        justify-content: center;
+        padding: 0.8rem 1.25rem;
+        font-size: 0.95rem;
+        border-radius: 10px;
+    }
+
+    .terminalWindow {
+        margin: 0 -0.5rem;
+        border-radius: 10px;
+    }
+
+    .terminalHeader {
+        padding: 0.75rem 1rem;
+    }
+
+    .terminalButton {
+        width: 8px;
+        height: 8px;
+    }
+
+    .terminalTitle {
+        font-size: 0.75rem;
+    }
+
+    .terminalContent {
+        padding: 0.875rem;
+        font-size: 0.7rem;
     }
 
     .statsSection {
-        padding: 1.5rem;
+        padding: 1.25rem;
         margin-top: 2rem;
+        border-radius: 12px;
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .stat {
+        padding: 0.75rem 0;
+    }
+
+    .statNumber {
+        font-size: clamp(1.25rem, 3.5vw, 1.75rem);
+    }
+
+    .statLabel {
+        font-size: 0.75rem;
+    }
+
+    .featuresSection,
+    .codeSection {
+        padding: 3rem 1rem;
     }
 
     .featureCard {
         padding: 1.25rem;
+        border-radius: 16px;
     }
 
     .featureIcon {
         width: 48px;
         height: 48px;
+        border-radius: 12px;
+    }
+
+    .featureTitle {
+        font-size: 1.125rem;
+    }
+
+    .featureDescription {
+        font-size: 0.875rem;
+    }
+
+    .codeFeature {
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .ctaButton {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.95rem;
+        border-radius: 10px;
+    }
+
+    .codeBlock {
+        margin: 0 -0.5rem;
+    }
+
+    .codeBlockContent {
+        border-radius: 10px;
+    }
+}
+
+/* Extra small screens */
+@media screen and (max-width: 360px) {
+    .heroTitle {
+        font-size: 1.375rem;
+    }
+
+    .heroSubtitle {
+        font-size: 0.825rem;
+    }
+
+    .terminalContent {
+        font-size: 0.65rem;
+    }
+
+    .primaryButton,
+    .secondaryButton {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .statsSection {
+        padding: 1rem;
     }
 
     .featuresSection,
     .codeSection {
-        padding: 4rem 0;
+        padding: 2.5rem 0.75rem;
+    }
+
+    .featureCard {
+        padding: 1rem;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .terminalWindow,
+    .featureCard,
+    .codeBlockContent {
+        backdrop-filter: blur(20px);
+    }
+}
+
+/* Landscape phones */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    .heroBanner {
+        min-height: auto;
+        padding: 2rem 0;
+    }
+
+    .heroContent {
+        gap: 2rem;
+    }
+
+    .heroTitle {
+        margin-bottom: 0.75rem;
+    }
+
+    .heroSubtitle {
+        margin-bottom: 1.25rem;
+    }
+
+    .terminalWindow {
+        max-height: 300px;
+        overflow: hidden;
+    }
+
+    .terminalContent {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .heroBackground,
+    .heroPattern,
+    .terminalWindow {
+        animation: none;
+    }
+
+    .featureCard,
+    .primaryButton,
+    .secondaryButton,
+    .ctaButton {
+        transition: none;
+    }
+
+    .featureCard:hover,
+    .primaryButton:hover,
+    .secondaryButton:hover,
+    .ctaButton:hover {
+        transform: none;
+    }
+}
+
+/* Print styles */
+@media print {
+    .heroBanner {
+        background: white !important;
+        color: black !important;
+        min-height: auto;
+        padding: 2rem 0;
+    }
+
+    .heroTitle,
+    .heroSubtitle,
+    .sectionTitle,
+    .featureTitle {
+        color: black !important;
+    }
+
+    .terminalWindow,
+    .featureCard {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+
+    .heroButtons,
+    .ctaButton {
+        display: none;
     }
 }
