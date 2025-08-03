@@ -17,9 +17,18 @@ sidebar_position: 5
 
 # Commands System
 
-Sure, you can generate config files. But what if you want to actually _do_
-something with them? That's where the commands system comes in. Think of it as
-your project's task runner, but integrated with your configuration.
+Here's the thing: we always think of "config files" and "scripts" as separate
+concerns. But they're not. Your deployment script is just configuring how your
+project deploys. Your development setup is configuring how your project runs
+locally. Your build process is configuring how your project gets built.
+
+Axogen treats commands as what they really are: another type of configuration.
+Because why should generating a `.env` file and running your database migrations
+be handled by completely different systems?
+
+So when I say "commands system," I really mean "the part of your configuration
+that does things instead of just defining values." Same unified approach, same
+type safety, same single source of truth.
 
 ## The Basics
 
