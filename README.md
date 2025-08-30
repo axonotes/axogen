@@ -1,6 +1,6 @@
 <p align="center">
   <a href="./">
-    <img src="assets/favicon.svg" alt="Axonotes Logo" width="150"/>
+    <img src="assets/axogen-typescript-zod.png" alt="Axonotes Logo" width="150"/>
   </a>
 </p>
 
